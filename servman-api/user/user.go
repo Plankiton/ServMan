@@ -169,15 +169,16 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
 
             if !not_set {
                 person.UpdateTime = time.Now()
-            }
 
-            people[index] = person
-            json.NewEncoder(w).Encode(util.Response{
-                Message: fmt.Sprintf("User %s did updated!", person.Name),
-                Code: "UpdatedUser",
-                Type: "sucess",
-                Data: person,
-            })
+                people[index] = person
+                json.NewEncoder(w).Encode(util.Response{
+                    Message: fmt.Sprintf("User %s did updated!", person.Name),
+                    Code: "UpdatedUser",
+                    Type: "sucess",
+                    Data: person,
+                })
+                return
+            }
         }
     }
 
