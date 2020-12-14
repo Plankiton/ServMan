@@ -7,6 +7,7 @@ import (
 
     "./user"
     "./farm"
+    "./serv"
 )
 
 // função principal para executar a api
@@ -55,6 +56,18 @@ func main() {
     router.HandleFunc("/user/farm/{id}", farm.DeleteFarm).Methods("DELETE")
     router.HandleFunc("/user/farm/{id}", farm.UpdateFarm).Methods("POST")
     log.Output(2, "Routing /user/farm - Farm operations")
+
+    // Serv
+    router.HandleFunc("/user/{id}/serv",      serv.GetServs).Methods("GET")
+    router.HandleFunc("/user/farm/{id}/serv", serv.GetServs).Methods("GET")
+
+    router.HandleFunc("/user/{id}/serv",      serv.CreateServ).Methods("POST")
+    router.HandleFunc("/user/farm/{id}/serv", serv.CreateServ).Methods("POST")
+
+    router.HandleFunc("/serv/{id}", serv.GetServ).Methods("GET")
+    router.HandleFunc("/serv/{id}", serv.DeleteServ).Methods("DELETE")
+    router.HandleFunc("/serv/{id}", serv.UpdateServ).Methods("POST")
+    log.Output(2, "Routing Service operations")
 
     log.Fatal(http.ListenAndServe(":8000", router))
 }
