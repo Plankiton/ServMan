@@ -4,6 +4,7 @@ import (
     "encoding/json"
     "github.com/plankiton/mux"
     "net/http"
+    "strconv"
     "time"
     "fmt"
 
@@ -30,10 +31,16 @@ var services []Serv
 func GetServs(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
-    var founds []Serv
+    founds := []Serv{}
     for _, f := range(services) {
-        if (f.EmployeeId == params["id"]){
-            founds = append(founds, f)
+        if r.URL.Path[:6+4] == "/user/farm" {
+            if (f.FarmId == params["id"]){
+                founds = append(founds, f)
+            }
+        } else {
+            if (f.EmployeeId == params["id"]){
+                founds = append(founds, f)
+            }
         }
     }
 
@@ -74,43 +81,22 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
     }
 
 
-    service := Serv {
-        Address: &Addr{},
-        PersonId: params["id"],
-    }
-
-    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", body.Data["cep"]))
-    if err == nil {
-        json.NewDecoder(r_addr.Body).Decode(&service.Address)
+    service := Serv {}
+    if r.URL.Path[:6+4] == "/user/farm" {
+        service.FarmId = params["id"]
+    } else {
+        service.EmployeeId = params["id"]
     }
 
     for i, prop := range(body.Data) {
         switch i {
-        case "name":
-            service.Name = prop
-        case "cep":
-            if service.Address.Code == "" {
-                service.Address.Code = prop
-            }
-        case "street":
-            if service.Address.Street == "" {
-                service.Address.Street = prop
-            }
-        case "number":
-            if service.Address.Number == "" {
-                service.Address.Number = prop
-            }
-        case "neighborhood":
-            if service.Address.Neightbourn == "" {
-                service.Address.Neightbourn = prop
-            }
-        case "state":
-            if service.Address.State == "" {
-                service.Address.State = prop
-            }
-        case "city":
-            if service.Address.City == "" {
-                service.Address.City = prop
+        case "description":
+            service.Description = prop
+        case "price":
+            var err error
+            service.Price, err = strconv.ParseFloat(prop, 64)
+            if err != nil {
+                service.Price = 0.0
             }
         }
     }
@@ -131,8 +117,7 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    service.CreateTime = time.Now()
-    service.UpdateTime = time.Now()
+    service.BeginTime = time.Now()
 
     services = append(services, service)
     res := util.Response {
@@ -158,26 +143,14 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
 
             for i, prop := range(body.Data) {
                 switch i {
-                case "name":
-                    service.Name = prop
-                case "cep":
-                    service.Address.Code = prop
-
-                    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", body.Data["cep"]))
-                    if err == nil {
-                        json.NewDecoder(r_addr.Body).Decode(&service.Address)
+                case "description":
+                    service.Description = prop
+                case "price":
+                    var err error
+                    service.Price, err = strconv.ParseFloat(prop, 64)
+                    if err != nil {
+                        service.Price = 0.0
                     }
-
-                case "street":
-                    service.Address.Street = prop
-                case "number":
-                    service.Address.Number = prop
-                case "neighborhood":
-                    service.Address.Neightbourn = prop
-                case "state":
-                    service.Address.State = prop
-                case "city":
-                    service.Address.City = prop
                 default:
                     not_set = true
                 }
@@ -185,11 +158,9 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
 
 
             if !not_set {
-                service.UpdateTime = time.Now()
-
                 services[index] = service
                 json.NewEncoder(w).Encode(util.Response{
-                    Message: fmt.Sprintf("Serv %s did updated!", service.Name),
+                    Message: fmt.Sprintf("Serv \"%s\" did updated!", service.Description),
                     Code: "UpdatedServ",
                     Type: "sucess",
                     Data: service,
