@@ -8,14 +8,18 @@ static_root = path.abspath('.')
 if not path.exists(static_root) or not path.isdir(static_root):
     raise MissingFolderError(static_root)
 
-e('go build -o /tmp/servman-api && /tmp/servman-api &')
+print("Error" if e('''
+    go build -o /tmp/servman-api && sleep 0.1 &&
+    /tmp/servman-api &
+''') else "Ok")
 @gen.coroutine
 def restart_api(*a):
-    e('''
+    print("Error" if e('''
         killall /tmp/servman-api 2> /dev/null &&
+        rm /tmp/servman-api &&
         go build -o /tmp/servman-api && sleep 0.1 &&
         /tmp/servman-api &
-    ''')
+    ''') else "Ok")
 
 paths = [static_root]
 w = fsw(paths,
