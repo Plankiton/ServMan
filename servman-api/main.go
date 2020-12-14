@@ -46,7 +46,7 @@ func main() {
     router.HandleFunc("/user/{id}", user.GetPerson).Methods("GET")
     router.HandleFunc("/user/{id}", user.DeletePerson).Methods("DELETE")
     router.HandleFunc("/user/{id}", user.UpdatePerson).Methods("POST")
-    log.Output(2, "Routing /user - User operations")
+    log.Output(2, "Routing User operations")
 
     // Farm
     router.HandleFunc("/user/{id}/farm", farm.GetFarms).Methods("GET")
@@ -55,7 +55,7 @@ func main() {
     router.HandleFunc("/user/farm/{id}", farm.GetFarm).Methods("GET")
     router.HandleFunc("/user/farm/{id}", farm.DeleteFarm).Methods("DELETE")
     router.HandleFunc("/user/farm/{id}", farm.UpdateFarm).Methods("POST")
-    log.Output(2, "Routing /user/farm - Farm operations")
+    log.Output(2, "Routing Farm operations")
 
     // Serv
     router.HandleFunc("/user/{id}/serv",      serv.GetServs).Methods("GET")
