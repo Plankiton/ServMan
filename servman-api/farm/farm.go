@@ -83,7 +83,11 @@ func GetFarm(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    json.NewEncoder(w).Encode(farm)
+    json.NewEncoder(w).Encode(util.Response{
+            Code: "GetFarm",
+            Type: "sucess",
+            Data: farm,
+        })
 }
 
 // CreateFarm cria um novo contato
@@ -171,14 +175,11 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
     farm.AddressId = address.ID
     database.Create(&farm)
 
-    res := util.Response {
+    json.NewEncoder(w).Encode(util.Response {
         Type:    "sucess",
-        Message: "Farm created!",
         Code:    "CreatedFarm",
         Data:    farm,
-    }
-
-    json.NewEncoder(w).Encode(res)
+    })
 }
 
 func UpdateFarm(w http.ResponseWriter, r *http.Request) {
@@ -267,5 +268,9 @@ func DeleteFarm(w http.ResponseWriter, r *http.Request) {
     }
 
     database.Delete(&farm)
-    json.NewEncoder(w).Encode(farm)
+    json.NewEncoder(w).Encode(util.Response{
+        Type: "sucess",
+        Code: "DeleteFarm",
+        Data: farm,
+    })
 }
