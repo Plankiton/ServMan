@@ -8,38 +8,23 @@ import (
     "./user"
     "./farm"
     "./serv"
+
+    "gorm.io/driver/postgres"
+    "gorm.io/gorm"
 )
 
 // função principal para executar a api
 func main() {
+    dsn := "host=localhost user=plankiton password=joaojoao dbname=servman port=5432 sslmode=disable TimeZone=America/Araguaina"
+    db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+    if err != nil && db != nil {
+    }
+    db.Migrator().CurrentDatabase()
+
     router := mux.NewRouter()
 
-    p := user.Person{
-        ID: "1",
-        Password: &user.Pass{},
-        Document: &user.Doc{
-            Type: "cpf",
-            Value: "123456789",
-        },
-        Name: "Joao Da Silva",
-    }
-    p.SetPass("joao")
-    user.AppendPerson(p)
-
-    f := farm.Farm{
-        ID: "1",
-        PersonId: "1",
-        Name: "Maria de cristo",
-        Address: &farm.Addr{
-            Street: "Joao de melo paia",
-            City:   "Sao Paulo",
-            State:  "SP",
-            Code:   "123233445",
-        },
-    }
-    farm.AppendFarm(f)
-
     // User
+    user.PopulateDB(db)
     router.HandleFunc("/user", user.GetPeople).Methods("GET")
 
     router.HandleFunc("/user", user.CreatePerson).Methods("POST")
@@ -49,6 +34,7 @@ func main() {
     log.Output(2, "Routing User operations")
 
     // Farm
+    farm.PopulateDB(db)
     router.HandleFunc("/user/{id}/farm", farm.GetFarms).Methods("GET")
 
     router.HandleFunc("/user/{id}/farm", farm.CreateFarm).Methods("POST")
@@ -58,6 +44,7 @@ func main() {
     log.Output(2, "Routing Farm operations")
 
     // Serv
+    serv.PopulateDB(db)
     router.HandleFunc("/user/{id}/serv",      serv.GetServs).Methods("GET")
     router.HandleFunc("/user/farm/{id}/serv", serv.GetServs).Methods("GET")
 
