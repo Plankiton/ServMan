@@ -1,6 +1,7 @@
 package util
 
 import (
+    "golang.org/x/crypto/bcrypt"
     "crypto/sha1"
     "fmt"
 )
@@ -20,4 +21,13 @@ type Request struct {
 func ToHash(s string) string {
     h := sha1.New()
     return fmt.Sprintf("%x", h.Sum([]byte(s)))
+}
+func PassHash(s string) (string, error) {
+    hash, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.MinCost)
+    return string(hash), err
+}
+
+func CheckPass(p []byte, s string) (error) {
+    err := bcrypt.CompareHashAndPassword(p, []byte(s))
+    return err
 }
