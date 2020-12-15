@@ -1,0 +1,12 @@
+{
+  "name": "servman",
+  "displayName": "servman",
+  "expo": {
+    "name": "servman",
+    "slug": "servman",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
