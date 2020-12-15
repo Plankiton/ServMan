@@ -6,6 +6,7 @@ import (
     "net/http"
     "time"
     "errors"
+    "fmt"
 
     "gorm.io/gorm"
     "../util"
@@ -14,12 +15,12 @@ import (
 type Person struct {
     ID         string    `json:"id,omitempty" gorm:"index"`
     DocValue   string    `json:"document,omitempty" gorm:"uniqueIndex"`
-    DocType    string    `json:"doc_type,omitempty" gorm:"uniqueIndex"`
-    Telephone  string    `json:"telephone,omitempty" gorm:"uniqueIndex"`
+    DocType    string    `json:"doc_type,omitempty"`
+    Telephone  string    `json:"telephone,omitempty" gorm:"index,default:null"`
     Name       string    `json:"name,omitempty" gorm:"index"`
     Type       string    `json:"type,omitempty" gorm:"index"`
 
-    PassHash   string    `json:"password,omitempty" gorm:"embendded,embenddedPrefix=Pass"`
+    PassHash   string    `json:"password,omitempty"`
 
     CreateTime time.Time `json:"created_at,omitempty"`
     UpdateTime time.Time `json:"updated_at,omitempty"`
@@ -145,18 +146,21 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
 
     person := Person {}
 
-    person.Name     = body.Data["name"]
-    person.DocValue = body.Data["document"]
-    person.DocType  = body.Data["doc_type"]
-    person.Type     = body.Data["type"]
-    _, err := person.SetPass(body.Data["password"])
+    person.Name      = body.Data["name"]
+    person.DocValue  = body.Data["document"]
+    person.Telephone = body.Data["telephone"]
+    person.DocType   = body.Data["doc_type"]
+    person.Type      = body.Data["type"]
+
     if person.Type == "root" {
-        res := database.Where("doc_value = ?", person.DocValue).First(&person)
+        res := database.Find(&[]Person{})
         if res.RowsAffected > 0 {
             person.Type = "employee"
             // TODO: sentence for validate logged user
         }
     }
+
+    _, err := person.SetPass(body.Data["password"])
 
     if err != nil {
         w.WriteHeader(500)
@@ -170,20 +174,30 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    {
-        person := Person{DocValue: person.DocValue,}
-        res := database.Where("doc_value = ?", person.DocValue).First(&person)
-        if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            w.WriteHeader(403)
+    res := database.Where("doc_value = ?", person.DocValue).First(&Person{})
+    if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        if res.Error != nil {
+            w.WriteHeader(400)
 
             json.NewEncoder(w).Encode(util.Response{
-                Message: "The user already exist!",
-                Code: "AlreadyExist",
+                Message: fmt.Sprintf("Database error: %s", res.Error),
+                Code: "BadRequest",
                 Type: "error",
+                Data: nil,
             })
 
             return
         }
+
+        w.WriteHeader(403)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The user already exist!",
+            Code: "AlreadyExist",
+            Type: "error",
+        })
+
+        return
     }
 
     person.ID = util.ToHash(person.DocValue)
