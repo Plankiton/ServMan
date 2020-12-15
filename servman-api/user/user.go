@@ -5,69 +5,57 @@ import (
     "github.com/plankiton/mux"
     "net/http"
     "time"
-    "fmt"
     "errors"
 
     "gorm.io/gorm"
     "../util"
 )
 
-type Doc struct {
-    Type      string `json:"type,omitempty"`
-           // cpf | cnpj
-    Value     string `json:"value,omitempty"`
-}
-
-type Pass struct {
-    Hash     string     `json:"hash,omitempty"`
-}
-
 type Person struct {
-    ID         string `json:"id,omitempty" gorm:"index"`
-    Document   *Doc      `json:"document,omitempty" gorm:"embendded,embenddedPrefix=Doc"`
+    ID         string    `json:"id,omitempty" gorm:"index"`
+    DocValue   string    `json:"document,omitempty" gorm:"uniqueIndex"`
+    DocType    string    `json:"doc_type,omitempty" gorm:"uniqueIndex"`
     Telephone  string    `json:"telephone,omitempty" gorm:"uniqueIndex"`
     Name       string    `json:"name,omitempty" gorm:"index"`
     Type       string    `json:"type,omitempty" gorm:"index"`
 
-    Password   *Pass     `json:"password,omitempty" gorm:"embendded,embenddedPrefix=Pass"`
+    PassHash   string    `json:"password,omitempty" gorm:"embendded,embenddedPrefix=Pass"`
 
     CreateTime time.Time `json:"created_at,omitempty"`
     UpdateTime time.Time `json:"updated_at,omitempty"`
 }
 
-func (self Person) CheckPass(s string) bool {
-    created_at := self.CreateTime.Format("%Y%m%d%H%M%S")
-    pass_hash := fmt.Sprintf("plankhash$%x$%x$%x",
-                        util.ToHash(s),
-                        util.ToHash(self.Document.Value),
-                        util.ToHash(created_at))
-    return self.Password.Hash == pass_hash
+func (self *Person) CheckPass(s string) bool {
+    byteHash := []byte(self.PassHash)
+    err := util.CheckPass(byteHash, s)
+    if err != nil {
+        return false
+    }
+    return true
 }
 
-func (self Person) SetPass(s string) string {
-    created_at := self.CreateTime.Format("%Y%m%d%H%M%S")
+func (self *Person) SetPass(s string) (string, error) {
+    hash, err := util.PassHash(s)
+    if err != nil {
+        return "", nil
+    }
 
-    hash := fmt.Sprintf("plankhash$%x$%x$%x",
-                         util.ToHash(s),
-                         util.ToHash(self.Document.Value),
-                         util.ToHash(created_at))
-
-    self.Password.Hash = hash
-    return self.Password.Hash
+    self.PassHash = hash
+    return self.PassHash, nil
 }
 
 var database *gorm.DB
 func PopulateDB(db *gorm.DB) {
     database = db
+    database.AutoMigrate(&Person{})
 }
 
 
-// GetPeople mostra todos os contatos da variável people
+// GetPeople mostra todos os contatos da variável person
 func GetPeople(w http.ResponseWriter, r *http.Request) {
-    params := mux.Vars(r)
 
-    people := []Person{}
-    res := database.First(&people, params["id"])
+    person := []Person{}
+    res := database.Find(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
@@ -79,6 +67,18 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
         })
 
         return
+    }
+
+    // TODO: sentence for validate logged user
+    people := []Person{}
+    for _, p := range(person) {
+        people = append(people, Person {
+            Name: p.Name,
+            DocValue: p.DocValue,
+            Type: p.Type,
+            CreateTime: p.CreateTime,
+            UpdateTime: p.UpdateTime,
+        })
     }
 
     json.NewEncoder(w).Encode(util.Response{
@@ -94,7 +94,7 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
     person := Person{}
-    res := database.First(&person, params["id"])
+    res := database.Where("doc_value = ?", params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
@@ -108,10 +108,18 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // TODO: sentence for validate logged user
     json.NewEncoder(w).Encode(util.Response{
         Code: "GetPerson",
         Type: "sucess",
-        Data: person,
+        Data: Person {
+            ID: person.ID,
+            Name: person.Name,
+            DocValue: person.DocValue,
+            Type: person.Type,
+            CreateTime: person.CreateTime,
+            UpdateTime: person.UpdateTime,
+        },
     })
 }
 
@@ -135,50 +143,66 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     }
 
 
-    person := Person {
-        Document: &Doc {},
-        Password: &Pass {},
-    }
+    person := Person {}
 
-    for i, prop := range(body.Data) {
-        switch i {
-        case "name":
-            person.Name = prop
-        case "document":
-            person.Document.Value = prop
-        case "doc_type":
-            person.Document.Type = prop
-        case "password":
-            person.SetPass(prop)
+    person.Name     = body.Data["name"]
+    person.DocValue = body.Data["document"]
+    person.DocType  = body.Data["doc_type"]
+    person.Type     = body.Data["type"]
+    _, err := person.SetPass(body.Data["password"])
+    if person.Type == "root" {
+        res := database.Where("doc_value = ?", person.DocValue).First(&person)
+        if res.RowAffected > 0 {
+            person.Type = "employee"
+            // TODO: sentence for validate logged user
         }
     }
 
+    if err != nil {
+        w.WriteHeader(500)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "Error on creation of password hash on database!",
+            Code: "DbError",
+            Type: "error",
+        })
+
+        return
+    }
+
     {
-        person := Person{Document: person.Document,}
-        res := database.Where("DocValue = ?", person.Document.Value).Find(&person)
+        person := Person{DocValue: person.DocValue,}
+        res := database.Where("doc_value = ?", person.DocValue).First(&person)
         if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
             w.WriteHeader(403)
 
             json.NewEncoder(w).Encode(util.Response{
-                Message: "The user already exists!",
-                Code: "AlreadyExists",
+                Message: "The user already exist!",
+                Code: "AlreadyExist",
                 Type: "error",
-                Data: nil,
             })
 
             return
         }
     }
 
+    person.ID = util.ToHash(person.DocValue)
     person.CreateTime = time.Now()
     person.UpdateTime = time.Now()
 
     database.Create(person)
+    database.Commit()
 
     json.NewEncoder(w).Encode(util.Response {
-        Type:    "sucess",
-        Code:    "CreatedPerson",
-        Data:    person,
+        Type: "sucess",
+        Code: "CreatedPerson",
+        Data: Person {
+            Name: person.Name,
+            DocValue: person.DocValue,
+            Type: person.Type,
+            CreateTime: person.CreateTime,
+            UpdateTime: person.UpdateTime,
+        },
     })
 }
 
@@ -189,56 +213,67 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
     json.NewDecoder(r.Body).Decode(&body)
 
     person := Person{}
-    res := database.First(&person, params["id"])
+    res := database.Where("id = ?", params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
+        res = database.Where("doc_value = ?", params["id"]).First(&person)
+        if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+            w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
-            Message: "The person not found!",
-            Code: "NotFound",
-            Type: "error",
-            Data: nil,
-        })
+            json.NewEncoder(w).Encode(util.Response{
+                Message: "The user not found!",
+                Code: "NotFound",
+                Type: "error",
+                Data: nil,
+            })
 
-        return
+            return
+        }
     }
-    not_set := false
 
     for i, prop := range(body.Data) {
         switch i {
         case "name":
             person.Name = prop
         case "document":
-            person.Document.Value = prop
+            person.DocValue = prop
         case "doc_type":
-            person.Document.Type = prop
+            person.DocType = prop
+        case "type":
+            person.Type = prop
+            // TODO: sentence for validate logged user
         case "password":
-            person.SetPass(prop)
-        default:
-            not_set = true
+            _, err := person.SetPass(prop)
+            if err != nil {
+                w.WriteHeader(500)
+
+                json.NewEncoder(w).Encode(util.Response{
+                    Message: "Error on creation of password hash on database!",
+                    Code: "DbError",
+                    Type: "error",
+                })
+
+                return
+            }
+
         }
     }
 
 
-    if !not_set {
-        person.UpdateTime = time.Now()
+    person.UpdateTime = time.Now()
 
-        database.Save(&person)
-        json.NewEncoder(w).Encode(util.Response{
-            Message: fmt.Sprintf("User %s did updated!", person.Name),
-            Code: "UpdatedUser",
-            Type: "sucess",
-            Data: person,
-        })
-        return
-    }
-
-    w.WriteHeader(404)
-
+    // TODO: sentence for validate logged user
+    database.Save(&person)
+    database.Commit()
     json.NewEncoder(w).Encode(util.Response{
-        Message: "The person not found!",
-        Code: "NotFound",
-        Type: "error",
+        Code: "UpdatedUser",
+        Type: "sucess",
+        Data: Person {
+            Name: person.Name,
+            DocValue: person.DocValue,
+            Type: person.Type,
+            CreateTime: person.CreateTime,
+            UpdateTime: person.UpdateTime,
+        },
     })
 }
 
@@ -246,7 +281,7 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
 func DeletePerson(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     person := Person{}
-    res := database.First(&person, params["id"])
+    res := database.Where("id = ?", params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
@@ -260,10 +295,18 @@ func DeletePerson(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    // TODO: sentence for validate logged user
     database.Delete(&person)
+    database.Commit()
     json.NewEncoder(w).Encode(util.Response{
         Code: "DeleteUser",
         Type: "sucess",
-        Data: person,
+        Data: Person {
+            Name: person.Name,
+            DocValue: person.DocValue,
+            Type: person.Type,
+            CreateTime: person.CreateTime,
+            UpdateTime: person.UpdateTime,
+        },
     })
 }

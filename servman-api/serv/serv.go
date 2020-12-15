@@ -6,57 +6,93 @@ import (
     "net/http"
     "strconv"
     "time"
-    "fmt"
+    "errors"
+
+    "gorm.io/gorm"
 
     "../util"
+    "../user"
+    "../farm"
 )
 
 type Serv struct {
-    ID          string    `json:"id,omitempty"`
+    ID          string    `json:"id,omitempty" gorm:"primaryKey"`
     Description string    `json:"description,omitempty"`
-    Price       float64   `json:"price,omitempty"`
+    Price       float64   `json:"price,omitempty" gorm:"index"`
     Begin_photo string    `json:"begin,omitempty"`
     End_photo   string    `json:"end,omitempty"`
 
-    EmployeeId  string    `json:"employee,omitempty"`
-    FarmId      string    `json:"farm,omitempty"`
+    EmployeeId  string    `json:"employee,omitempty" gorm:"index"`
+    FarmId      string    `json:"farm,omitempty" gorm:"index"`
 
-    BeginTime   time.Time `json:"started_at,omitempty"`
-    EndTime     time.Time `json:"finished_at,omitempty"`
+    BeginTime   time.Time `json:"started_at,omitempty" gorm:"index"`
+    EndTime     time.Time `json:"finished_at,omitempty" gorm:"index"`
 }
 
-var services []Serv
+var database *gorm.DB
+func PopulateDB(db *gorm.DB) {
+    database = db
+    database.AutoMigrate(&Serv{})
+}
 
-// GetPeople mostra todos os contatos da variável services
+// GetPeople mostra todos os contatos da variável serv
 func GetServs(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
-    founds := []Serv{}
-    for _, f := range(services) {
-        if r.URL.Path[:6+4] == "/user/farm" {
-            if (f.FarmId == params["id"]){
-                founds = append(founds, f)
-            }
-        } else {
-            if (f.EmployeeId == params["id"]){
-                founds = append(founds, f)
-            }
+    serv := []Serv{}
+    res := database.Where("employee_id = ? ", params["id"]).Find(&serv)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        res = database.Where("farm_id = ? ", params["id"]).Find(&serv)
+        if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+            w.WriteHeader(404)
+
+            json.NewEncoder(w).Encode(util.Response{
+                Message: "The person not found!",
+                Code: "NotFound",
+                Type: "error",
+                Data: nil,
+            })
+
+            return
         }
     }
 
-    json.NewEncoder(w).Encode(founds)
+    // TODO: sentence for validate logged user
+
+    json.NewEncoder(w).Encode(util.Response{
+        Code: "GetServices",
+        Type: "sucess",
+        Data: serv,
+    })
+
 }
 
 // GetServ mostra apenas um contato
 func GetServ(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    for _, item := range services {
-        if item.ID == params["id"] {
-            json.NewEncoder(w).Encode(item)
-            return
-        }
+
+    serv := Serv{}
+    res := database.First(&serv, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
     }
-    json.NewEncoder(w).Encode(&Serv{})
+
+    // TODO: sentence for validate logged user
+
+    json.NewEncoder(w).Encode(util.Response{
+        Code: "GetService",
+        Type: "sucess",
+        Data: serv,
+    })
 }
 
 // CreateServ cria um novo contato
@@ -81,29 +117,55 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
     }
 
 
-    service := Serv {}
+    serv := Serv {}
     if r.URL.Path[:6+4] == "/user/farm" {
-        service.FarmId = params["id"]
+        serv.FarmId = params["id"]
+        serv.EmployeeId = body.Data["employee"]
     } else {
-        service.EmployeeId = params["id"]
+        serv.EmployeeId = params["id"]
+        serv.FarmId = body.Data["farm"]
     }
 
-    for i, prop := range(body.Data) {
-        switch i {
-        case "description":
-            service.Description = prop
-        case "price":
-            var err error
-            service.Price, err = strconv.ParseFloat(prop, 64)
-            if err != nil {
-                service.Price = 0.0
-            }
-        }
+    empl, farm := user.Person{}, farm.Farm{}
+    res := database.Where("id = ? AND type = 'employee'", serv.EmployeeId).First(&empl)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The employee not found!",
+            Code: "NotFound",
+            Type: "error",
+        })
+
+        return
+    }
+    res = database.Where("id = ? AND person_id = ?", serv.FarmId, empl.ID).First(&farm)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The farm not found or employee is not then owner!",
+            Code: "NotFound",
+            Type: "error",
+        })
+
+        return
+    }
+
+    serv.Description = body.Data["description"]
+    serv.ID = util.ToHash(serv.Description+serv.EmployeeId+serv.FarmId)
+
+    var err error
+    serv.Price, err = strconv.ParseFloat(body.Data["price"], 64)
+    if err != nil {
+        serv.Price = 0.0
     }
 
 
-    for _, item := range services {
-        if item.ID == service.ID {
+    {
+        serv := Serv{ID:serv.ID,}
+        res := database.First(&serv, serv.ID)
+        if errors.Is(res.Error, gorm.ErrRecordNotFound) {
             w.WriteHeader(403)
 
             json.NewEncoder(w).Encode(util.Response{
@@ -117,17 +179,16 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    service.BeginTime = time.Now()
+    serv.BeginTime = time.Now()
 
-    services = append(services, service)
-    res := util.Response {
+    // TODO: sentence for validate logged user
+
+    database.Create(serv)
+    json.NewEncoder(w).Encode(util.Response {
         Type:    "sucess",
-        Message: "Serv created!",
         Code:    "CreatedServ",
-        Data:    service,
-    }
-
-    json.NewEncoder(w).Encode(res)
+        Data:    serv,
+    })
 }
 
 func UpdateServ(w http.ResponseWriter, r *http.Request) {
@@ -136,66 +197,70 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
-    for index, item := range services {
-        if item.ID == params["id"] {
-            service := services[index]
-            not_set := false
+    serv := Serv{}
+    res := database.First(&serv, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
 
-            for i, prop := range(body.Data) {
-                switch i {
-                case "description":
-                    service.Description = prop
-                case "price":
-                    var err error
-                    service.Price, err = strconv.ParseFloat(prop, 64)
-                    if err != nil {
-                        service.Price = 0.0
-                    }
-                default:
-                    not_set = true
-                }
-            }
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
 
+        return
+    }
 
-            if !not_set {
-                services[index] = service
-                json.NewEncoder(w).Encode(util.Response{
-                    Message: fmt.Sprintf("Serv \"%s\" did updated!", service.Description),
-                    Code: "UpdatedServ",
-                    Type: "sucess",
-                    Data: service,
-                })
-
-                return
+    for i, prop := range(body.Data) {
+        switch i {
+        case "description":
+            serv.Description = prop
+        case "price":
+            var err error
+            serv.Price, err = strconv.ParseFloat(prop, 64)
+            if err != nil {
+                serv.Price = 0.0
             }
         }
     }
 
-    w.WriteHeader(404)
 
+    // TODO: sentence for validate logged user
+
+    database.Save(&serv)
     json.NewEncoder(w).Encode(util.Response{
-        Message: "The service not found!",
-        Code: "NotFound",
-        Type: "error",
+        Code: "UpdatedServ",
+        Type: "sucess",
+        Data: serv,
     })
 }
 
 // DeleteServ deleta um contato
 func DeleteServ(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    for index, item := range services {
-        if item.ID == params["id"] {
-            services = append(services[:index], services[index+1:]...)
-            break
-        }
-        json.NewEncoder(w).Encode(services)
+
+    serv := Serv{}
+    res := database.First(&serv, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
     }
-}
 
-func AppendServ(p Serv) {
-    services = append(services, p)
-}
+    // TODO: sentence for validate logged user
 
-func Servs() []Serv {
-    return services
+    database.Delete(&serv)
+    json.NewEncoder(w).Encode(util.Response{
+        Code: "DeleteService",
+        Type: "sucess",
+        Data: serv,
+    })
 }
