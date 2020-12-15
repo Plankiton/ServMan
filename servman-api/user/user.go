@@ -74,6 +74,7 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
     people := []Person{}
     for _, p := range(person) {
         people = append(people, Person {
+            ID: person.ID,
             Name: p.Name,
             DocValue: p.DocValue,
             Type: p.Type,
@@ -211,6 +212,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
         Type: "sucess",
         Code: "CreatedPerson",
         Data: Person {
+            ID: person.ID,
             Name: person.Name,
             DocValue: person.DocValue,
             Type: person.Type,
@@ -227,21 +229,18 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
     json.NewDecoder(r.Body).Decode(&body)
 
     person := Person{}
-    res := database.Where("id = ?", params["id"]).First(&person)
+    res := database.Where("id = ? OR doc_value = ?", params["id"], params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        res = database.Where("doc_value = ?", params["id"]).First(&person)
-        if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            w.WriteHeader(404)
+        w.WriteHeader(404)
 
-            json.NewEncoder(w).Encode(util.Response{
-                Message: "The user not found!",
-                Code: "NotFound",
-                Type: "error",
-                Data: nil,
-            })
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The user not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
 
-            return
-        }
+        return
     }
 
     for i, prop := range(body.Data) {
@@ -282,6 +281,7 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
         Code: "UpdatedUser",
         Type: "sucess",
         Data: Person {
+            ID: person.ID,
             Name: person.Name,
             DocValue: person.DocValue,
             Type: person.Type,
