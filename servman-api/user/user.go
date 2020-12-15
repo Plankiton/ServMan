@@ -295,7 +295,7 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
 func DeletePerson(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     person := Person{}
-    res := database.Where("id = ?", params["id"]).First(&person)
+    res := database.Where("id = ? OR doc_value = ?", params["id"], params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
