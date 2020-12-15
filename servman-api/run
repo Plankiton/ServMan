@@ -15,8 +15,8 @@ print("Error" if e('''
 @gen.coroutine
 def restart_api(*a):
     print("Error" if e('''
-        killall /tmp/servman-api 2> /dev/null &&
-        rm /tmp/servman-api &&
+        killall /tmp/servman-api 2> /dev/null;
+        rm /tmp/servman-api 2> /dev/null
         go build -o /tmp/servman-api && sleep 0.1 &&
         /tmp/servman-api &
     ''') else "Ok")

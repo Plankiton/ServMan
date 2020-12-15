@@ -6,11 +6,14 @@ import (
     "net/http"
     "time"
     "fmt"
+    "errors"
 
+    "gorm.io/gorm"
     "../util"
 )
 
 type Addr struct {
+    ID           string `json:"id,omitempty" gorm:"index"`
     Street       string `json:"street,omitempty"`
     State        string `json:"state,omitempty"`
     Number       string `json:"number,omitempty"`
@@ -20,42 +23,67 @@ type Addr struct {
 }
 
 type Farm struct {
+    ID        string `json:"id,omitempty" gorm:"primaryKey"`
     PersonId  string `json:"client_id,omitempty"`
-    ID        string `json:"id,omitempty"`
-    Address   *Addr  `json:"address,omitempty"`
-    Name      string `json:"name,omitempty"`
+    AddressId string `json:"address,omitempty" gorm:"uniqueIndex"`
+    Name      string `json:"name,omitempty" gorm:"index"`
 
-    CreateTime time.Time `json:"created_at,omitempty"`
-    UpdateTime time.Time `json:"updated_at,omitempty"`
+    CreateTime time.Time `json:"created_at,omitempty" gorm:"index"`
+    UpdateTime time.Time `json:"updated_at,omitempty" gorm:"index"`
 }
 
 
-var farms []Farm
+var database *gorm.DB
+func PopulateDB(db *gorm.DB) {
+    database = db
+}
 
 // GetPeople mostra todos os contatos da variável farms
 func GetFarms(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
-    var founds []Farm
-    for _, f := range(farms) {
-        if (f.PersonId == params["id"]){
-            founds = append(founds, f)
-        }
+    farms := []Farm{}
+    res := database.Where("PersonId = ?", params["id"]).Find(&farms)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The farm not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
     }
 
-    json.NewEncoder(w).Encode(founds)
+    json.NewEncoder(w).Encode(util.Response{
+            Code: "GetFarms",
+            Type: "sucess",
+            Data: farms,
+        })
 }
 
 // GetFarm mostra apenas um contato
 func GetFarm(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    for _, item := range farms {
-        if item.ID == params["id"] {
-            json.NewEncoder(w).Encode(item)
-            return
-        }
+    farm := Farm{}
+
+    res := database.First(&farm, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The farm not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
     }
-    json.NewEncoder(w).Encode(&Farm{})
+
+    json.NewEncoder(w).Encode(farm)
 }
 
 // CreateFarm cria um novo contato
@@ -79,15 +107,14 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-
     farm := Farm {
-        Address: &Addr{},
         PersonId: params["id"],
     }
 
+    address := Addr{}
     r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", body.Data["cep"]))
     if err == nil {
-        json.NewDecoder(r_addr.Body).Decode(&farm.Address)
+        json.NewDecoder(r_addr.Body).Decode(&address)
     }
 
     for i, prop := range(body.Data) {
@@ -95,52 +122,55 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
         case "name":
             farm.Name = prop
         case "cep":
-            if farm.Address.Code == "" {
-                farm.Address.Code = prop
+            if address.Code == "" {
+                address.Code = prop
             }
         case "street":
-            if farm.Address.Street == "" {
-                farm.Address.Street = prop
+            if address.Street == "" {
+                address.Street = prop
             }
         case "number":
-            if farm.Address.Number == "" {
-                farm.Address.Number = prop
+            if address.Number == "" {
+                address.Number = prop
             }
         case "neighborhood":
-            if farm.Address.Neightbourn == "" {
-                farm.Address.Neightbourn = prop
+            if address.Neightbourn == "" {
+                address.Neightbourn = prop
             }
         case "state":
-            if farm.Address.State == "" {
-                farm.Address.State = prop
+            if address.State == "" {
+                address.State = prop
             }
         case "city":
-            if farm.Address.City == "" {
-                farm.Address.City = prop
+            if address.City == "" {
+                address.City = prop
             }
         }
     }
 
 
-    for _, item := range farms {
-        if item.ID == farm.ID {
-            w.WriteHeader(403)
+    founds := database.Where("PersonId = ?", params["id"]).Find(&farm)
+    if !errors.Is(founds.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(403)
 
-            json.NewEncoder(w).Encode(util.Response{
-                Message: "The user already exists!",
-                Code: "AlreadyExists",
-                Type: "error",
-                Data: nil,
-            })
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The farm already exists!",
+            Code: "AlreadyExists",
+            Type: "error",
+            Data: nil,
+        })
 
-            return
-        }
+        return
     }
 
     farm.CreateTime = time.Now()
     farm.UpdateTime = time.Now()
 
-    farms = append(farms, farm)
+    // Sending all to database
+    database.Create(&address)
+    farm.AddressId = address.ID
+    database.Create(&farm)
+
     res := util.Response {
         Type:    "sucess",
         Message: "Farm created!",
@@ -157,52 +187,54 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
-    for index, item := range farms {
-        if item.ID == params["id"] {
-            farm := farms[index]
-            not_set := false
+    address := Addr{}
 
-            for i, prop := range(body.Data) {
-                switch i {
-                case "name":
-                    farm.Name = prop
-                case "cep":
-                    farm.Address.Code = prop
+    farm := Farm{}
+    res := database.First(&farm, params["id"])
+    if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        not_set := false
 
-                    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", body.Data["cep"]))
-                    if err == nil {
-                        json.NewDecoder(r_addr.Body).Decode(&farm.Address)
-                    }
+        for i, prop := range(body.Data) {
+            switch i {
+            case "name":
+                farm.Name = prop
+            case "cep":
+                address.Code = prop
 
-                case "street":
-                    farm.Address.Street = prop
-                case "number":
-                    farm.Address.Number = prop
-                case "neighborhood":
-                    farm.Address.Neightbourn = prop
-                case "state":
-                    farm.Address.State = prop
-                case "city":
-                    farm.Address.City = prop
-                default:
-                    not_set = true
+                r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", body.Data["cep"]))
+                if err == nil {
+                    json.NewDecoder(r_addr.Body).Decode(&address)
                 }
+
+            case "street":
+                address.Street = prop
+            case "number":
+                address.Number = prop
+            case "neighborhood":
+                address.Neightbourn = prop
+            case "state":
+                address.State = prop
+            case "city":
+                address.City = prop
+            default:
+                not_set = true
             }
+        }
 
 
-            if !not_set {
-                farm.UpdateTime = time.Now()
+        if !not_set {
+            farm.UpdateTime = time.Now()
 
-                farms[index] = farm
-                json.NewEncoder(w).Encode(util.Response{
-                    Message: fmt.Sprintf("Farm %s did updated!", farm.Name),
-                    Code: "UpdatedFarm",
-                    Type: "sucess",
-                    Data: farm,
-                })
+            farm.AddressId = address.ID
+            database.Save(&farm)
+            json.NewEncoder(w).Encode(util.Response{
+                Message: fmt.Sprintf("Farm %s did updated!", farm.Name),
+                Code: "UpdatedFarm",
+                Type: "sucess",
+                Data: farm,
+            })
 
-                return
-            }
+            return
         }
     }
 
@@ -218,19 +250,22 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
 // DeleteFarm deleta um contato
 func DeleteFarm(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    for index, item := range farms {
-        if item.ID == params["id"] {
-            farms = append(farms[:index], farms[index+1:]...)
-            break
-        }
-        json.NewEncoder(w).Encode(farms)
+
+    farm := Farm{}
+    res := database.First(&farm, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The farm not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
     }
-}
 
-func AppendFarm(p Farm) {
-    farms = append(farms, p)
-}
-
-func Farms() []Farm {
-    return farms
+    database.Delete(&farm)
+    json.NewEncoder(w).Encode(farm)
 }
