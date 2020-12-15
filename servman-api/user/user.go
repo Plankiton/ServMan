@@ -152,7 +152,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     _, err := person.SetPass(body.Data["password"])
     if person.Type == "root" {
         res := database.Where("doc_value = ?", person.DocValue).First(&person)
-        if res.RowAffected > 0 {
+        if res.RowsAffected > 0 {
             person.Type = "employee"
             // TODO: sentence for validate logged user
         }
