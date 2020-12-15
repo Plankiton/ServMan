@@ -6,7 +6,9 @@ import (
     "net/http"
     "time"
     "fmt"
+    "errors"
 
+    "gorm.io/gorm"
     "../util"
 )
 
@@ -21,13 +23,13 @@ type Pass struct {
 }
 
 type Person struct {
-    ID         string    `json:"id,omitempty"`
-    Document   *Doc      `json:"document,omitempty"`
-    Telephone  string    `json:"telephone,omitempty"`
-    Name       string    `json:"name,omitempty"`
-    Type       string    `json:"type,omitempty"`
-            // employee | root | client
-    Password   *Pass     `json:"password,omitempty"`
+    ID         string `json:"id,omitempty" gorm:"index"`
+    Document   *Doc      `json:"document,omitempty" gorm:"embendded,embenddedPrefix=Doc"`
+    Telephone  string    `json:"telephone,omitempty" gorm:"uniqueIndex"`
+    Name       string    `json:"name,omitempty" gorm:"index"`
+    Type       string    `json:"type,omitempty" gorm:"index"`
+
+    Password   *Pass     `json:"password,omitempty" gorm:"embendded,embenddedPrefix=Pass"`
 
     CreateTime time.Time `json:"created_at,omitempty"`
     UpdateTime time.Time `json:"updated_at,omitempty"`
@@ -54,23 +56,63 @@ func (self Person) SetPass(s string) string {
     return self.Password.Hash
 }
 
-var people []Person
+var database *gorm.DB
+func PopulateDB(db *gorm.DB) {
+    database = db
+}
+
 
 // GetPeople mostra todos os contatos da variável people
 func GetPeople(w http.ResponseWriter, r *http.Request) {
-    json.NewEncoder(w).Encode(people)
+    params := mux.Vars(r)
+
+    people := []Person{}
+    res := database.First(&people, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
+    }
+
+    json.NewEncoder(w).Encode(util.Response{
+        Code: "GetPeople",
+        Type: "sucess",
+        Data: people,
+    })
+
 }
 
 // GetPerson mostra apenas um contato
 func GetPerson(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    for _, item := range people {
-        if item.ID == params["id"] || item.Document.Value == params["id"] {
-            json.NewEncoder(w).Encode(item)
-            return
-        }
+
+    person := Person{}
+    res := database.First(&person, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
     }
-    json.NewEncoder(w).Encode(&Person{})
+
+    json.NewEncoder(w).Encode(util.Response{
+        Code: "GetPerson",
+        Type: "sucess",
+        Data: person,
+    })
 }
 
 // CreatePerson cria um novo contato
@@ -111,8 +153,10 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    for _, item := range people {
-        if item.Document.Value == person.Document.Value {
+    {
+        person := Person{Document: person.Document,}
+        res := database.Where("DocValue = ?", person.Document.Value).Find(&person)
+        if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
             w.WriteHeader(403)
 
             json.NewEncoder(w).Encode(util.Response{
@@ -129,15 +173,13 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     person.CreateTime = time.Now()
     person.UpdateTime = time.Now()
 
-    people = append(people, person)
-    res := util.Response {
+    database.Create(person)
+
+    json.NewEncoder(w).Encode(util.Response {
         Type:    "sucess",
-        Message: "Person created!",
         Code:    "CreatedPerson",
         Data:    person,
-    }
-
-    json.NewEncoder(w).Encode(res)
+    })
 }
 
 func UpdatePerson(w http.ResponseWriter, r *http.Request) {
@@ -146,40 +188,49 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
-    for index, item := range people {
-        if item.ID == params["id"] || item.Document.Value == params["id"] {
-            person := people[index]
-            not_set := false
+    person := Person{}
+    res := database.First(&person, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
 
-            for i, prop := range(body.Data) {
-                switch i {
-                case "name":
-                    person.Name = prop
-                case "document":
-                    person.Document.Value = prop
-                case "doc_type":
-                    person.Document.Type = prop
-                case "password":
-                    person.SetPass(prop)
-                default:
-                    not_set = true
-                }
-            }
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
 
+        return
+    }
+    not_set := false
 
-            if !not_set {
-                person.UpdateTime = time.Now()
-
-                people[index] = person
-                json.NewEncoder(w).Encode(util.Response{
-                    Message: fmt.Sprintf("User %s did updated!", person.Name),
-                    Code: "UpdatedUser",
-                    Type: "sucess",
-                    Data: person,
-                })
-                return
-            }
+    for i, prop := range(body.Data) {
+        switch i {
+        case "name":
+            person.Name = prop
+        case "document":
+            person.Document.Value = prop
+        case "doc_type":
+            person.Document.Type = prop
+        case "password":
+            person.SetPass(prop)
+        default:
+            not_set = true
         }
+    }
+
+
+    if !not_set {
+        person.UpdateTime = time.Now()
+
+        database.Save(&person)
+        json.NewEncoder(w).Encode(util.Response{
+            Message: fmt.Sprintf("User %s did updated!", person.Name),
+            Code: "UpdatedUser",
+            Type: "sucess",
+            Data: person,
+        })
+        return
     }
 
     w.WriteHeader(404)
@@ -194,19 +245,25 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
 // DeletePerson deleta um contato
 func DeletePerson(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
-    for index, item := range people {
-        if item.ID == params["id"] || item.Document.Value == params["id"] {
-            people = append(people[:index], people[index+1:]...)
-            break
-        }
-        json.NewEncoder(w).Encode(people)
+    person := Person{}
+    res := database.First(&person, params["id"])
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
     }
-}
 
-func AppendPerson(p Person) {
-    people = append(people, p)
-}
-
-func People() []Person {
-    return people
+    database.Delete(&person)
+    json.NewEncoder(w).Encode(util.Response{
+        Code: "DeleteUser",
+        Type: "sucess",
+        Data: person,
+    })
 }
