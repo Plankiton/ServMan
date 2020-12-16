@@ -36,6 +36,19 @@ func PopulateDB(db *gorm.DB) {
 }
 
 // GetPeople mostra todos os contatos da variável serv
+func GetAllServs(w http.ResponseWriter, r *http.Request) {
+    serv := []Serv{}
+    database.Find(&serv)
+
+    // TODO: sentence for validate logged user
+
+    json.NewEncoder(w).Encode(util.Response{
+        Code: "GetServices",
+        Type: "sucess",
+        Data: serv,
+    })
+}
+
 func GetServs(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 

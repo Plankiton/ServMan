@@ -41,6 +41,18 @@ func PopulateDB(db *gorm.DB) {
 }
 
 // GetPeople mostra todos os contatos da variável farm
+func GetAllFarms(w http.ResponseWriter, r *http.Request) {
+    farm := []Farm{}
+    database.Find(&farm)
+
+    // TODO: sentence for validate logged user
+
+    json.NewEncoder(w).Encode(util.Response{
+            Code: "GetFarms",
+            Type: "sucess",
+            Data: farm,
+        })
+}
 func GetFarms(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
