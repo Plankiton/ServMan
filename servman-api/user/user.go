@@ -74,7 +74,7 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
     people := []Person{}
     for _, p := range(person) {
         people = append(people, Person {
-            ID: person.ID,
+            ID: p.ID,
             Name: p.Name,
             DocValue: p.DocValue,
             Type: p.Type,
