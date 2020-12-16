@@ -12,13 +12,22 @@ import (
     "../util"
 )
 
+type Role struct {
+    ID         string    `json:"id,omitempty" gorm:"primaryKey"`
+    Name       string    `json:"name"`
+}
+
+type RoleShip struct {
+    RoleId     string    `json:"id,omitempty" gorm:"primaryKey"`
+    PersonId   string    `json:"person_id,omitempty" gorm:"index"`
+}
+
 type Person struct {
-    ID         string    `json:"id,omitempty" gorm:"index"`
+    ID         string    `json:"id,omitempty" gorm:"primaryKey"`
     DocValue   string    `json:"document,omitempty" gorm:"uniqueIndex"`
     DocType    string    `json:"doc_type,omitempty"`
     Telephone  string    `json:"telephone,omitempty" gorm:"index,default:null"`
     Name       string    `json:"name,omitempty" gorm:"index"`
-    Type       string    `json:"type,omitempty" gorm:"index"`
 
     PassHash   string    `json:"password,omitempty"`
 
@@ -73,12 +82,21 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
     people := []Person{}
     for _, p := range(person) {
+        roleships, types := []RoleShip{}, []string{}
+        database.Where("person_id = ? ", p.ID).Find(&roleships)
+
+        for _, r := range(roleships) {
+            role := Role{}
+            database.First(&role, r.RoleId)
+
+            types = append(types, role.Name)
+        }
+
         people = append(people, Person {
             ID: p.ID,
             Name: p.Name,
             DocValue: p.DocValue,
             Telephone: p.Telephone,
-            Type: p.Type,
             CreateTime: p.CreateTime,
             UpdateTime: p.UpdateTime,
         })
@@ -111,6 +129,17 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    roleships, types := []RoleShip{}, []string{}
+    database.Where("person_id = ? ", person.ID).Find(&roleships)
+
+    for _, r := range(roleships) {
+        role := Role{}
+        database.First(&role, r.RoleId)
+
+        types = append(types, role.Name)
+    }
+
+
     // TODO: sentence for validate logged user
     json.NewEncoder(w).Encode(util.Response{
         Code: "GetPerson",
@@ -120,7 +149,6 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
             Name: person.Name,
             DocValue: person.DocValue,
             Telephone: person.Telephone,
-            Type: person.Type,
             CreateTime: person.CreateTime,
             UpdateTime: person.UpdateTime,
         },
@@ -153,13 +181,26 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     person.DocValue  = body.Data["document"]
     person.Telephone = body.Data["telephone"]
     person.DocType   = body.Data["doc_type"]
-    person.Type      = body.Data["type"]
 
-    if person.Type == "root" {
+    role, ship := Role{}, RoleShip{}
+
+    // TODO: sentence for validate logged user
+    if body.Data["type"] == "root" {
         res := database.Find(&[]Person{})
         if res.RowsAffected > 0 {
-            person.Type = "employee"
-            // TODO: sentence for validate logged user
+
+            database.First(&role, "employee")
+
+            ship.PersonId = person.ID
+            ship.RoleId = role.ID
+
+        } else {
+
+            database.First(&role, "root")
+
+            ship.PersonId = person.ID
+            ship.RoleId = role.ID
+
         }
     }
 
@@ -208,7 +249,18 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     person.UpdateTime = time.Now()
 
     database.Create(person)
+    database.Create(ship)
     database.Commit()
+
+    roleships, types := []RoleShip{}, []string{}
+    database.Where("person_id = ? ", person.ID).Find(&roleships)
+
+    for _, r := range(roleships) {
+        role := Role{}
+        database.First(&role, r.RoleId)
+
+        types = append(types, role.Name)
+    }
 
     json.NewEncoder(w).Encode(util.Response {
         Type: "sucess",
@@ -218,7 +270,6 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
             Name: person.Name,
             DocValue: person.DocValue,
             Telephone: person.Telephone,
-            Type: person.Type,
             CreateTime: person.CreateTime,
             UpdateTime: person.UpdateTime,
         },
@@ -255,7 +306,6 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
         case "doc_type":
             person.DocType = prop
         case "type":
-            person.Type = prop
             // TODO: sentence for validate logged user
         case "password":
             _, err := person.SetPass(prop)
@@ -280,6 +330,17 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
     database.Save(&person)
     database.Commit()
+
+    roleships, types := []RoleShip{}, []string{}
+    database.Where("person_id = ? ", person.ID).Find(&roleships)
+
+    for _, r := range(roleships) {
+        role := Role{}
+        database.First(&role, r.RoleId)
+
+        types = append(types, role.Name)
+    }
+
     json.NewEncoder(w).Encode(util.Response{
         Code: "UpdatedUser",
         Type: "sucess",
@@ -288,7 +349,6 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
             Name: person.Name,
             DocValue: person.DocValue,
             Telephone: person.Telephone,
-            Type: person.Type,
             CreateTime: person.CreateTime,
             UpdateTime: person.UpdateTime,
         },
@@ -316,6 +376,17 @@ func DeletePerson(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
     database.Delete(&person)
     database.Commit()
+
+    roleships, types := []RoleShip{}, []string{}
+    database.Where("person_id = ? ", person.ID).Find(&roleships)
+
+    for _, r := range(roleships) {
+        role := Role{}
+        database.First(&role, r.RoleId)
+
+        types = append(types, role.Name)
+    }
+
     json.NewEncoder(w).Encode(util.Response{
         Code: "DeleteUser",
         Type: "sucess",
@@ -324,7 +395,6 @@ func DeletePerson(w http.ResponseWriter, r *http.Request) {
             Name: person.Name,
             DocValue: person.DocValue,
             Telephone: person.Telephone,
-            Type: person.Type,
             CreateTime: person.CreateTime,
             UpdateTime: person.UpdateTime,
         },
