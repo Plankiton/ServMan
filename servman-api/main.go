@@ -8,20 +8,30 @@ import (
     "./user"
     "./farm"
     "./serv"
+    "./auth"
 
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
 )
 
+
 // função principal para executar a api
 func main() {
     dsn := "host=localhost user=plankiton password=joaojoao dbname=servman port=5432 sslmode=disable TimeZone=America/Araguaina"
     db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-    if err != nil && db != nil {
+    if err != nil {
+        return
     }
+
     db.Migrator().CurrentDatabase()
 
     router := mux.NewRouter()
+
+    // Auth
+    auth.PopulateDB(db)
+    router.HandleFunc("/auth/login", auth.CreateToken).Methods("POST")
+    router.HandleFunc("/auth/logout", auth.DeleteToken).Methods("POST")
+    router.HandleFunc("/auth/check", auth.TestToken).Methods("POST")
 
     // User
     user.PopulateDB(db)
