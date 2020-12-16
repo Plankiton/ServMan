@@ -35,6 +35,7 @@ func main() {
 
     // Farm
     farm.PopulateDB(db)
+    router.HandleFunc("/farm", farm.GetAllFarms).Methods("GET")
     router.HandleFunc("/user/{id}/farm", farm.GetFarms).Methods("GET")
 
     router.HandleFunc("/user/{id}/farm", farm.CreateFarm).Methods("POST")
@@ -45,6 +46,7 @@ func main() {
 
     // Serv
     serv.PopulateDB(db)
+    router.HandleFunc("/serv",      serv.GetAllServs).Methods("GET")
     router.HandleFunc("/user/{id}/serv",      serv.GetServs).Methods("GET")
     router.HandleFunc("/user/farm/{id}/serv", serv.GetServs).Methods("GET")
 

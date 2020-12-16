@@ -14,7 +14,7 @@ type Response struct {
 }
 
 type Request struct {
-    Token   string             `json:"message,omitempty"`
+    Token   string             `json:"token,omitempty"`
     Data    map[string]string  `json:"data,omitempty"`
 }
 

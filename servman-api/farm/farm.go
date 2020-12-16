@@ -182,6 +182,7 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
             address = addr
         } else {
             database.Create(&address)
+            database.Commit()
         }
     }
     farm.AddressId = address.ID
@@ -265,6 +266,7 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
             address = addr
         } else {
             database.Create(&address)
+            database.Commit()
         }
     }
 
@@ -275,6 +277,7 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
 
     database.Save(&farm)
+    database.Commit()
     json.NewEncoder(w).Encode(util.Response{
         Message: fmt.Sprintf("Farm %s did updated!", farm.Name),
         Code: "UpdatedFarm",
@@ -307,6 +310,7 @@ func DeleteFarm(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
 
     database.Delete(&farm)
+    database.Commit()
     json.NewEncoder(w).Encode(util.Response{
         Type: "sucess",
         Code: "DeleteFarm",

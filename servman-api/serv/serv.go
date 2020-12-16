@@ -197,6 +197,7 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
 
     database.Create(serv)
+    database.Commit()
     json.NewEncoder(w).Encode(util.Response {
         Type:    "sucess",
         Code:    "CreatedServ",
@@ -242,6 +243,7 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
 
     database.Save(&serv)
+    database.Commit()
     json.NewEncoder(w).Encode(util.Response{
         Code: "UpdatedServ",
         Type: "sucess",
@@ -271,6 +273,7 @@ func DeleteServ(w http.ResponseWriter, r *http.Request) {
     // TODO: sentence for validate logged user
 
     database.Delete(&serv)
+    database.Commit()
     json.NewEncoder(w).Encode(util.Response{
         Code: "DeleteService",
         Type: "sucess",

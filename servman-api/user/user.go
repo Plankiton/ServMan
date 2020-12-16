@@ -7,26 +7,27 @@ import (
     "time"
     "errors"
     "fmt"
+    "strings"
 
     "gorm.io/gorm"
     "../util"
 )
 
 type Role struct {
-    ID         string    `json:"id,omitempty" gorm:"primaryKey"`
-    Name       string    `json:"name"`
+    ID         int    `json:"id,omitempty" gorm:"primaryKey"`
+    Name       string `json:"name,omitempty" gorm:"index"`
 }
 
 type RoleShip struct {
-    RoleId     string    `json:"id,omitempty" gorm:"primaryKey"`
+    RoleId     int       `json:"id,omitempty" gorm:"primaryKey"`
     PersonId   string    `json:"person_id,omitempty" gorm:"index"`
 }
 
 type Person struct {
     ID         string    `json:"id,omitempty" gorm:"primaryKey"`
     DocValue   string    `json:"document,omitempty" gorm:"uniqueIndex"`
-    DocType    string    `json:"doc_type,omitempty"`
-    Telephone  string    `json:"telephone,omitempty" gorm:"index,default:null"`
+    DocType    string    `json:"doc_type,omitempty" gorm:"default:'cpf'"`
+    Phone      string    `json:"phone,omitempty gorm:"index,default:null"`
     Name       string    `json:"name,omitempty" gorm:"index"`
 
     PassHash   string    `json:"password,omitempty"`
@@ -57,7 +58,26 @@ func (self *Person) SetPass(s string) (string, error) {
 var database *gorm.DB
 func PopulateDB(db *gorm.DB) {
     database = db
-    database.AutoMigrate(&Person{})
+    database.AutoMigrate(&Person{}, &Role{}, &RoleShip{})
+
+    roles := []Role{}
+    database.Find(&roles)
+    if len(roles) == 0 {
+        database.Create(&Role {
+            Name:   "root",
+        })
+        database.Create(&Role {
+            Name:   "employee",
+        })
+        database.Create(&Role {
+            Name:   "client",
+        })
+        database.Create(&Role {
+            Name:   "admin",
+        })
+    }
+
+    database.Commit()
 }
 
 
@@ -80,7 +100,7 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
     }
 
     // TODO: sentence for validate logged user
-    people := []Person{}
+    people := [](map[string]interface{}){}
     for _, p := range(person) {
         roleships, types := []RoleShip{}, []string{}
         database.Where("person_id = ? ", p.ID).Find(&roleships)
@@ -92,13 +112,14 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
             types = append(types, role.Name)
         }
 
-        people = append(people, Person {
-            ID: p.ID,
-            Name: p.Name,
-            DocValue: p.DocValue,
-            Telephone: p.Telephone,
-            CreateTime: p.CreateTime,
-            UpdateTime: p.UpdateTime,
+        people = append(people, map[string]interface{} {
+            "id": p.ID,
+            "name": p.Name,
+            "docvalue": p.DocValue,
+            "phone": p.Phone,
+            "roles": types,
+            "create_at": p.CreateTime,
+            "update_at": p.UpdateTime,
         })
     }
 
@@ -134,9 +155,10 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
 
     for _, r := range(roleships) {
         role := Role{}
-        database.First(&role, r.RoleId)
-
-        types = append(types, role.Name)
+        res := database.First(&role, r.RoleId)
+        if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+            types = append(types, string(r.RoleId))
+        }
     }
 
 
@@ -144,13 +166,14 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(util.Response{
         Code: "GetPerson",
         Type: "sucess",
-        Data: Person {
-            ID: person.ID,
-            Name: person.Name,
-            DocValue: person.DocValue,
-            Telephone: person.Telephone,
-            CreateTime: person.CreateTime,
-            UpdateTime: person.UpdateTime,
+        Data: map[string]interface{} {
+            "id": person.ID,
+            "name": person.Name,
+            "docvalue": person.DocValue,
+            "phone": person.Phone,
+            "roles": types,
+            "create_at": person.CreateTime,
+            "update_at": person.UpdateTime,
         },
     })
 }
@@ -172,6 +195,22 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
         })
 
         return
+    } else {
+        needed := []string{"password", "name", "document", "phone"}
+        for _, prop := range(needed) {
+            if body.Data[prop] == "" {
+                w.WriteHeader(400)
+
+                json.NewEncoder(w).Encode(util.Response{
+                    Message: fmt.Sprintf(`"%s" is required!`, prop),
+                    Code: "BadRequest",
+                    Type: "error",
+                    Data: nil,
+                })
+
+                return
+            }
+        }
     }
 
 
@@ -179,30 +218,8 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
 
     person.Name      = body.Data["name"]
     person.DocValue  = body.Data["document"]
-    person.Telephone = body.Data["telephone"]
+    person.Phone = body.Data["phone"]
     person.DocType   = body.Data["doc_type"]
-
-    role, ship := Role{}, RoleShip{}
-
-    // TODO: sentence for validate logged user
-    if body.Data["type"] == "root" {
-        res := database.Find(&[]Person{})
-        if res.RowsAffected > 0 {
-
-            database.First(&role, "employee")
-
-            ship.PersonId = person.ID
-            ship.RoleId = role.ID
-
-        } else {
-
-            database.First(&role, "root")
-
-            ship.PersonId = person.ID
-            ship.RoleId = role.ID
-
-        }
-    }
 
     _, err := person.SetPass(body.Data["password"])
 
@@ -249,29 +266,19 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     person.UpdateTime = time.Now()
 
     database.Create(person)
-    database.Create(ship)
     database.Commit()
-
-    roleships, types := []RoleShip{}, []string{}
-    database.Where("person_id = ? ", person.ID).Find(&roleships)
-
-    for _, r := range(roleships) {
-        role := Role{}
-        database.First(&role, r.RoleId)
-
-        types = append(types, role.Name)
-    }
 
     json.NewEncoder(w).Encode(util.Response {
         Type: "sucess",
         Code: "CreatedPerson",
-        Data: Person {
-            ID: person.ID,
-            Name: person.Name,
-            DocValue: person.DocValue,
-            Telephone: person.Telephone,
-            CreateTime: person.CreateTime,
-            UpdateTime: person.UpdateTime,
+        Data: map[string]interface{} {
+            "id": person.ID,
+            "name": person.Name,
+            "docvalue": person.DocValue,
+            "phone": person.Phone,
+            "roles": []string{},
+            "create_at": person.CreateTime,
+            "update_at": person.UpdateTime,
         },
     })
 }
@@ -306,7 +313,69 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
         case "doc_type":
             person.DocType = prop
         case "type":
+
             // TODO: sentence for validate logged user
+
+            {
+                roleships := []RoleShip{}
+                database.Where("person_id = ? ", person.ID).Find(&roleships)
+                for _, r := range(roleships) {
+                    database.Delete(r)
+                }
+            }
+
+            types := strings.Split(prop, ",")
+
+            for _, r := range(types) {
+                role, ship := Role{}, RoleShip{}
+                ship_exists := false
+
+                if r == "root" {
+                    // TODO: Substituir por checagem de auth
+                    res := database.Find(&[]Person{})
+                    if res.RowsAffected > 0 {
+
+                        database.Where("name = ?", "root").First(&role)
+                        if database.Where("role_id = ? AND person_id = ?",
+                                 role.ID, person.ID).First(&ship) == nil {
+                            ship_exists = true
+                        }
+
+                        ship.PersonId = person.ID
+                        ship.RoleId = role.ID
+
+                    } else {
+
+                        database.Where("name = ?", "admin").First(&role)
+
+                        ship.PersonId = person.ID
+                        ship.RoleId = role.ID
+
+                    }
+                } else {
+                    database.Where("name = ?",  r).First(&role)
+
+                    ship.PersonId = person.ID
+                    ship.RoleId = role.ID
+                    if role.Name == "" {
+                        database.First(&role, "client")
+
+                        ship.PersonId = person.ID
+                        ship.RoleId = role.ID
+                    }
+                }
+
+                if ship.PersonId != "" && ship.RoleId != 0 {
+                    if ship_exists {
+                        database.Save(&ship)
+                    } else {
+                        database.Create(&ship)
+                    }
+                }
+            }
+
+            database.Commit()
+
         case "password":
             _, err := person.SetPass(prop)
             if err != nil {
@@ -344,13 +413,14 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(util.Response{
         Code: "UpdatedUser",
         Type: "sucess",
-        Data: Person {
-            ID: person.ID,
-            Name: person.Name,
-            DocValue: person.DocValue,
-            Telephone: person.Telephone,
-            CreateTime: person.CreateTime,
-            UpdateTime: person.UpdateTime,
+        Data: map[string]interface{} {
+            "id": person.ID,
+            "name": person.Name,
+            "docvalue": person.DocValue,
+            "phone": person.Phone,
+            "roles": types,
+            "createtime": person.CreateTime,
+            "updatetime": person.UpdateTime,
         },
     })
 }
@@ -390,13 +460,14 @@ func DeletePerson(w http.ResponseWriter, r *http.Request) {
     json.NewEncoder(w).Encode(util.Response{
         Code: "DeleteUser",
         Type: "sucess",
-        Data: Person {
-            ID: person.ID,
-            Name: person.Name,
-            DocValue: person.DocValue,
-            Telephone: person.Telephone,
-            CreateTime: person.CreateTime,
-            UpdateTime: person.UpdateTime,
+        Data: map[string]interface{} {
+            "id": person.ID,
+            "name": person.Name,
+            "docvalue": person.DocValue,
+            "phone": person.Phone,
+            "roles": types,
+            "createtime": person.CreateTime,
+            "updatetime": person.UpdateTime,
         },
     })
 }
