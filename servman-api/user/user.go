@@ -157,7 +157,7 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
         role := Role{}
         res := database.First(&role, r.RoleId)
         if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            types = append(types, string(r.RoleId))
+            types = append(types, fmt.Sprintf("%i", r.RoleId))
         }
     }
 
