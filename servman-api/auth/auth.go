@@ -14,24 +14,25 @@ import (
 
 
 type Token struct {
-    ID          string    `json:"token,omitempty"`
+    ID          string    `json:"token,omitempty" gorm:"primaryKey,unique"`
     PersonId    string    `json:"person_id,omitempty"`
 
     CreateTime  time.Time `json:"created_at,omitempty"`
-    LastLogTime time.Time `json:"created_at,omitempty"`
+    LastLogTime time.Time `json:"last_login,omitempty"`
 }
 
-func (self Token) New(p user.Person) Token {
+func (self *Token) Populate(p user.Person) {
+    self.PersonId = p.ID
+
     self.CreateTime = time.Now()
     self.LastLogTime = time.Now()
-    return Token {
-        PersonId: p.ID,
-        ID: util.ToHash(fmt.Sprintf("%s%s%s",
-                p.ID,
-                p.PassHash,
-                self.CreateTime.String(),
-            )),
-    }
+
+    str := fmt.Sprintf("%s%s%s",
+        p.ID,
+        p.PassHash,
+        self.CreateTime.String(),
+    )
+    self.ID = util.ToHash(str)
 }
 
 var database *gorm.DB
@@ -55,18 +56,32 @@ func CreateToken(w http.ResponseWriter, r *http.Request) {
     }
 
     person := user.Person{}
+    res := database.Where("doc_value = ?", body.Data["document"]).First(&person)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
 
-    database.Where("doc_value = ?", body.Data["document"]).First(&person)
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
+    }
+
     if person.CheckPass(body.Data["password"]) {
 
-        token := Token{}.New(person)
+        token := Token{}
+        token.Populate(person)
+
         database.Create(token)
         database.Commit()
 
         json.NewEncoder(w).Encode(util.Response {
             Code: "Login",
             Type: "sucess",
-            Data: token.ID,
+            Data: token,
         })
         return
     }
