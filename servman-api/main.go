@@ -22,7 +22,7 @@ func main() {
 
     router := mux.NewRouter()
 
-    SockIoAPI(router, db)
+    // SockIoAPI(router, db)
     HttpAPI(router, db)
 
     log.Fatal(http.ListenAndServe(":8000", router))
