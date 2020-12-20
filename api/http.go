@@ -1,13 +1,13 @@
-package main
+package api
 import (
     "log"
 
-    "./user"
-    "./farm"
-    "./serv"
-    "./auth"
+    "github.com/plankiton/ServMan/api/user"
+    "github.com/plankiton/ServMan/api/farm"
+    "github.com/plankiton/ServMan/api/serv"
+    "github.com/plankiton/ServMan/api/auth"
 
-    "github.com/plankiton/mux"
+    "github.com/gorilla/mux"
     "gorm.io/gorm"
 )
 

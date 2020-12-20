@@ -1,10 +1,12 @@
-package main
+package api
 
 import (
     "log"
     "net/http"
 
-    "github.com/plankiton/mux"
+    "github.com/plankiton/ServMan/api"
+
+    "github.com/gorilla/mux"
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
 )

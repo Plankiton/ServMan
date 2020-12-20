@@ -2,7 +2,7 @@ package user
 
 import (
     "encoding/json"
-    "github.com/plankiton/mux"
+    "github.com/gorilla/mux"
     "net/http"
     "time"
     "errors"

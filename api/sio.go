@@ -1,11 +1,11 @@
-package main
+package api
 
 import (
     "fmt"
     "net/http"
 
     "gorm.io/gorm"
-    "github.com/plankiton/mux"
+    "github.com/gorilla/mux"
     sio "github.com/googollee/go-socket.io"
 )
 

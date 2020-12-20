@@ -2,7 +2,7 @@ package serv
 
 import (
     "encoding/json"
-    "github.com/plankiton/mux"
+    "github.com/gorilla/mux"
     "net/http"
     "strconv"
     "time"
