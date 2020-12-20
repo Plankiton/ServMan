@@ -2,7 +2,7 @@ package user
 
 import (
     "encoding/json"
-    "github.com/plankiton/mux"
+    "github.com/gorilla/mux"
     "net/http"
     "time"
     "errors"
@@ -10,7 +10,7 @@ import (
     "strings"
 
     "gorm.io/gorm"
-    "../util"
+    "github.com/plankiton/ServMan/api/util"
 )
 
 type Role struct {

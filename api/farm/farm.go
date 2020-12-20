@@ -2,14 +2,14 @@ package farm
 
 import (
     "encoding/json"
-    "github.com/plankiton/mux"
+    "github.com/gorilla/mux"
     "net/http"
     "time"
     "fmt"
     "errors"
 
     "gorm.io/gorm"
-    "../util"
+    "github.com/plankiton/ServMan/api/util"
 )
 
 type Addr struct {

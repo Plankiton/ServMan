@@ -2,7 +2,7 @@ package serv
 
 import (
     "encoding/json"
-    "github.com/plankiton/mux"
+    "github.com/gorilla/mux"
     "net/http"
     "strconv"
     "time"
@@ -10,9 +10,9 @@ import (
 
     "gorm.io/gorm"
 
-    "../util"
-    "../user"
-    "../farm"
+    "github.com/plankiton/ServMan/api/util"
+    "github.com/plankiton/ServMan/api/user"
+    "github.com/plankiton/ServMan/api/farm"
 )
 
 type Serv struct {

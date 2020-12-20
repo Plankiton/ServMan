@@ -8,8 +8,8 @@ import (
     "fmt"
 
     "gorm.io/gorm"
-    "../util"
-    "../user"
+    "github.com/plankiton/ServMan/api/util"
+    "github.com/plankiton/ServMan/api/user"
 )
 
 
