@@ -11,7 +11,9 @@ import { View,
 import logo from '../assets/logo.png';
 import { Platform } from '@unimodules/core';
 
-import api, {test_api} from '../services/api'
+import axios from "axios";
+import api from '../services/api'
+
 export default function Login({navigation}) {
     const [doc, setDoc] = useState('');
     const [pass, setPass] = useState('');
@@ -21,6 +23,17 @@ export default function Login({navigation}) {
             if (user) {
                 AsyncStorage.getItem('token').then(token=>{
                     if (token) {
+                        api.get(`/user/${user}`, {
+                            'Authorization': token
+                        }).then(r=> {
+                            const {name, roles, phone} = r.data.data;
+
+                            AsyncStorage.setItem('name', name);
+                            AsyncStorage.setItem('roles', roles);
+                            AsyncStorage.setItem('phone', phone);
+
+                        });
+
                         navigation.navigate('List');
                     }
                 });
@@ -31,19 +44,20 @@ export default function Login({navigation}) {
     async function handleSubmit() {
         try {
             const response = await api.post('/auth/login', {
-                token: 'joao',
                 data: {
                     document: doc,
                     password: pass,
                 }
             })
-            const {person_id, token} = response.data;
-            await AsyncStorage.setItem('user', id);
+
+            const {person_id, token} = response.data.data;
+            await AsyncStorage.setItem('user', person_id);
             await AsyncStorage.setItem('token', token);
-            navigation.navigate('List');
-        } catch (e) {
-            Alert.alert("CPF ou Senha estão errados!!");
+        } catch (e){
+            Alert.alert(`CPF ou Senha estão errados!!`);
         }
+
+        // setPass('');
     }
 
     return (
