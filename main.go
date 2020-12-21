@@ -39,7 +39,7 @@ func main() {
     router := mux.NewRouter()
 
     // SockIoAPI(router, db)
-    HttpAPI(router, db)
+    api.HttpAPI(router, db)
     p := getEnv("HTTP_PORT", "8000")
     log.Fatal(http.ListenAndServe(p, router))
 }

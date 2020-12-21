@@ -10,7 +10,8 @@ import (
 )
 
 func SockIoAPI(router *mux.Router, db *gorm.DB) {
-    server := sio.NewServer(nil)
+    server, err := sio.NewServer(nil)
+    if err == nil {}
 
     server.OnConnect("/", func(s sio.Conn) error {
         s.SetContext("")
