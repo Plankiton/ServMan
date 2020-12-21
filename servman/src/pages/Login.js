@@ -1,43 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { View, AsyncStorage, KeyboardAvoidingView ,Image, Text, TextInput, TouchableOpacity, StyleSheet} from 'react-native';
+import { View,
+         AsyncStorage,
+         KeyboardAvoidingView,
+         Alert,
+         Image,
+         Text,
+         TextInput,
+         TouchableOpacity,
+         StyleSheet } from 'react-native';
 import logo from '../assets/logo.png';
 import { Platform } from '@unimodules/core';
 
-import api from '../services/api'
+import api, {test_api} from '../services/api'
 export default function Login({navigation}) {
     const [doc, setDoc] = useState('');
     const [pass, setPass] = useState('');
 
     useEffect(()=>{
         AsyncStorage.getItem('user').then(user=>{
-            if(user) {
+            if (user) {
                 AsyncStorage.getItem('token').then(token=>{
-                    if(token) {
-                        navigation.navigate('List')
+                    if (token) {
+                        navigation.navigate('List');
                     }
-                })
+                });
             }
-        })
+        });
     },[]);
 
     async function handleSubmit() {
-        navigation.navigate('List');
-        const response = await api.post('/auth/login', {
-            data: {
-                document: doc,
-                password: pass,
-            }
-        })
-        const {person_id, token} = response.data;
-        await AsyncStorage.setItem('user', id);
-        await AsyncStorage.setItem('token', token);
-
-        navigation.navigate('List');
+        try {
+            const response = await api.post('/auth/login', {
+                token: 'joao',
+                data: {
+                    document: doc,
+                    password: pass,
+                }
+            })
+            const {person_id, token} = response.data;
+            await AsyncStorage.setItem('user', id);
+            await AsyncStorage.setItem('token', token);
+            navigation.navigate('List');
+        } catch (e) {
+            Alert.alert("CPF ou Senha estão errados!!");
+        }
     }
 
     return (
         <KeyboardAvoidingView
-         enabled={Platform.OS== 'ios'} 
+         enabled={Platform.OS=='ios'}
          behavior="padding" style={styles.container}>
             <View style={styles.box}>
                 <Image source={logo}/>
