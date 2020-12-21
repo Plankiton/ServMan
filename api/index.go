@@ -1,6 +1,7 @@
-package api
+package handler
 
 import (
+    "os"
     "log"
     "net/http"
 
@@ -9,10 +10,24 @@ import (
     "gorm.io/gorm"
 )
 
+func getEnv(key string, def string) string {
+    val, ok := os.LookupEnv(key)
+    if !ok {
+        return def
+    }
+    return val
+}
 
 // função principal para executar a api
-func main() {
-    dsn := "host=localhost user=plankiton password=joaojoao dbname=servman port=5432 sslmode=disable TimeZone=America/Araguaina"
+func Handler(w http.ResponseWriter, r *http.Request) {
+    dsn := getEnv("DB_URI",
+        "host=localhost "+
+        "user=plankiton "+
+        "password=joaojoao "+
+        "dbname=servman "+
+        "port=5432 "+
+        "sslmode=disable "+
+        "TimeZone=America/Araguaina")
     db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
     if err != nil {
         return
@@ -24,6 +39,6 @@ func main() {
 
     // SockIoAPI(router, db)
     HttpAPI(router, db)
-
-    log.Fatal(http.ListenAndServe(":8000", router))
+    p := getEnv("HTTP_PORT", "8000")
+    log.Fatal(http.ListenAndServe(p, router))
 }
