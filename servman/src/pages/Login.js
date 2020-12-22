@@ -23,17 +23,6 @@ export default function Login({navigation}) {
             if (user) {
                 AsyncStorage.getItem('token').then(token=>{
                     if (token) {
-                        api.get(`/user/${user}`, {
-                            'Authorization': token
-                        }).then(r=> {
-                            const {name, roles, phone} = r.data.data;
-
-                            AsyncStorage.setItem('name', name);
-                            AsyncStorage.setItem('roles', roles);
-                            AsyncStorage.setItem('phone', phone);
-
-                        });
-
                         navigation.navigate('List');
                     }
                 });
@@ -51,8 +40,18 @@ export default function Login({navigation}) {
             })
 
             const {person_id, token} = response.data.data;
-            await AsyncStorage.setItem('user', person_id);
-            await AsyncStorage.setItem('token', token);
+
+            if (person_id && token) {
+                const r = await api.post(`/user/${person_id}`)
+                await AsyncStorage.setItem('curr_user',JSON.stringify({
+                    ...r.data.data,
+                    token: token,
+                }));
+                console.log(r.data.data);
+                navigation.navigate('List');
+            } else {
+                Alert.alert(`CPF ou Senha estão errados!!`);
+            }
         } catch (e){
             Alert.alert(`CPF ou Senha estão errados!!`);
         }
