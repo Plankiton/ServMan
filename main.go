@@ -5,7 +5,7 @@ import (
     "log"
     "net/http"
 
-    "github.com/plankiton/ServMan/api"
+    api "github.com/plankiton/ServMan/api"
 
     "github.com/gorilla/mux"
     "gorm.io/driver/postgres"
@@ -41,5 +41,5 @@ func main() {
     // SockIoAPI(router, db)
     api.HttpAPI(router, db)
     p := getEnv("HTTP_PORT", "8000")
-    log.Fatal(http.ListenAndServe(p, router))
+    log.Fatal(http.ListenAndServe(":"+p, router))
 }

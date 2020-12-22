@@ -4,6 +4,7 @@ import (
     "golang.org/x/crypto/bcrypt"
     "crypto/sha1"
     "fmt"
+    "io"
 )
 
 type Response struct {
@@ -20,7 +21,8 @@ type Request struct {
 
 func ToHash(s string) string {
     h := sha1.New()
-    return fmt.Sprintf("%x", h.Sum([]byte(s)))
+    io.WriteString(h, s)
+    return fmt.Sprintf("%x", h.Sum(nil))
 }
 func PassHash(s string) (string, error) {
     hash, err := bcrypt.GenerateFromPassword([]byte(s), bcrypt.MinCost)

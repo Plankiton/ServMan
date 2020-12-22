@@ -129,6 +129,21 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    person := user.Person{}
+    res := database.Where("doc_value = ? OR id = ?",
+        params["id"], params["id"]).First(&person)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
+    }
 
     serv := Serv {}
     if r.URL.Path[:6+4] == "/user/farm" {
@@ -140,24 +155,24 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
     }
 
     empl, farm := user.Person{}, farm.Farm{}
-    res := database.Where("id = ? AND type = 'employee'", serv.EmployeeId).First(&empl)
+    res = database.Where("id = ? AND type = 'employee'", serv.EmployeeId).First(&empl)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
         json.NewEncoder(w).Encode(util.Response{
-            Message: "The employee not found!",
+            Message: "The employee not found or person is not employee!",
             Code: "NotFound",
             Type: "error",
         })
 
         return
     }
-    res = database.Where("id = ? AND person_id = ?", serv.FarmId, empl.ID).First(&farm)
+    res = database.Where("id = ?", serv.FarmId).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
         json.NewEncoder(w).Encode(util.Response{
-            Message: "The farm not found or employee is not then owner!",
+            Message: "The farm not found!",
             Code: "NotFound",
             Type: "error",
         })

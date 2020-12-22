@@ -10,6 +10,7 @@ import (
 
     "gorm.io/gorm"
     "github.com/plankiton/ServMan/api/util"
+    "github.com/plankiton/ServMan/api/user"
 )
 
 type Addr struct {
@@ -127,8 +128,25 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+    person := user.Person{}
+    res := database.Where("doc_value = ? OR id = ?",
+        params["id"], params["id"]).First(&person)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The person not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
+    }
+
+
     farm := Farm {
-        PersonId: params["id"],
+        PersonId: person.ID,
     }
 
     address := Addr{}
@@ -171,13 +189,10 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
     farm.CreateTime = time.Now()
     farm.UpdateTime = time.Now()
 
-    farm.ID = util.ToHash(farm.Name+
-        farm.CreateTime.Format("%Y%m%d%H%M%S"))
-
     address.ID = util.ToHash(address.Code+address.Street+address.Number)
     {
         addr := Addr{}
-        res := database.Where("id = ?", address.ID).First(&addr)
+        res = database.Where("id = ?", address.ID).First(&addr)
         if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
             address = addr
         } else {
@@ -186,8 +201,12 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
         }
     }
     farm.AddressId = address.ID
+    farm.ID = util.ToHash(farm.Name+
+        farm.PersonId+
+        farm.AddressId+
+        farm.CreateTime.Format("%Y%m%d%H%M%S"))
 
-    res := database.Where("address_id = ?", farm.AddressId).First(&farm)
+    res = database.Where("address_id = ?", farm.AddressId).First(&farm)
     if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(403)
 
