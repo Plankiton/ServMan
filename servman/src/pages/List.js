@@ -45,8 +45,12 @@ export default function List({ navigation }) {
 
         if (r) {
             new_servs = [...new Set(r.data.data)]
-            setServs(new_servs);
             console.log('UPDATING SERVICES ', new_servs)
+            if (new_servs.lenght > 0) {
+                setServs(new_servs);
+            } else {
+                setServs(null);
+            }
         }
 
         return new_servs;
