@@ -15,9 +15,7 @@ print("Error" if e('''
 @gen.coroutine
 def restart_api(*a):
     print("Error" if e('''
-        killall go 2> /dev/null;
         killall servman-api 2> /dev/null;
-        rm /tmp/servman-api /tmp/go-build* -rf 2> /dev/null
         go build -o /tmp/servman-api && sleep 0.1 &&
         /tmp/servman-api &
     ''') else "Ok")
@@ -26,7 +24,7 @@ paths = [static_root]
 w = fsw(paths,
     recursive=True,
     on_changed=restart_api,
-    interval=1.0)
+    interval=1)
 
 try:
     w.start()
