@@ -13,7 +13,7 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import logo from '../assets/logo.png';
 
 
-import {ServList} from '../components/Lists';
+import ServList from '../components/ServList';
 import api from '../services/api';
 
 export default function List({ navigation }) {

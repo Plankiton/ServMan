@@ -134,4 +134,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export {ServList};
+export default ServList;

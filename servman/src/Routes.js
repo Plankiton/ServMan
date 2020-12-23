@@ -6,9 +6,9 @@ import List from './pages/List';
 
 const Routes = createAppContainer(
     createSwitchNavigator({
+        List,
         Login,
         Register,
-        List,
     })
 );
 
