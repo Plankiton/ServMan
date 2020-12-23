@@ -1,43 +1,67 @@
 import React, { useState, useEffect } from 'react';
-import { View, AsyncStorage, KeyboardAvoidingView ,Image, Text, TextInput, TouchableOpacity, StyleSheet} from 'react-native';
+import { View,
+         AsyncStorage,
+         KeyboardAvoidingView,
+         Alert,
+         Image,
+         Text,
+         TextInput,
+         TouchableOpacity,
+         StyleSheet } from 'react-native';
 import logo from '../assets/logo.png';
 import { Platform } from '@unimodules/core';
 
+import axios from "axios";
 import api from '../services/api'
+
 export default function Login({navigation}) {
     const [doc, setDoc] = useState('');
     const [pass, setPass] = useState('');
 
     useEffect(()=>{
         AsyncStorage.getItem('user').then(user=>{
-            if(user) {
+            if (user) {
                 AsyncStorage.getItem('token').then(token=>{
-                    if(token) {
-                        navigation.navigate('List')
+                    if (token) {
+                        navigation.navigate('List');
                     }
-                })
+                });
             }
-        })
+        });
     },[]);
 
     async function handleSubmit() {
-        navigation.navigate('List');
-        const response = await api.post('/auth/login', {
-            data: {
-                document: doc,
-                password: pass,
-            }
-        })
-        const {person_id, token} = response.data;
-        await AsyncStorage.setItem('user', id);
-        await AsyncStorage.setItem('token', token);
+        try {
+            const response = await api.post('/auth/login', {
+                data: {
+                    document: doc,
+                    password: pass,
+                }
+            })
 
-        navigation.navigate('List');
+            const {person_id, token} = response.data.data;
+
+            if (person_id && token) {
+                const r = await api.post(`/user/${person_id}`)
+                await AsyncStorage.setItem('curr_user',JSON.stringify({
+                    ...r.data.data,
+                    token: token,
+                }));
+                console.log(r.data.data);
+                navigation.navigate('List');
+            } else {
+                Alert.alert(`CPF ou Senha estão errados!!`);
+            }
+        } catch (e){
+            Alert.alert(`CPF ou Senha estão errados!!`);
+        }
+
+        // setPass('');
     }
 
     return (
         <KeyboardAvoidingView
-         enabled={Platform.OS== 'ios'} 
+         enabled={Platform.OS=='ios'}
          behavior="padding" style={styles.container}>
             <View style={styles.box}>
                 <Image source={logo}/>
