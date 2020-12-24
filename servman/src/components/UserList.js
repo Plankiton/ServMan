@@ -2,12 +2,12 @@ import React from 'react';
 import {Text,
     View,
     ScrollView,
+    StyleSheet,
     Image} from 'react-native';
 import {Button} from 'react-native-paper';
-
 import styles from '../Styles'
 
-function ServList (props) {
+function UserList(props) {
     return (<ScrollView>
         <View style={{
             ...styles.box,
@@ -60,19 +60,14 @@ function ServList (props) {
             <Text style={{
                 ...styles.title,
                 fontSize: 16
-            }}>Serviços</Text>
+            }}>Usuários</Text>
         </View>
 
 
-        {props.servs?(props.servs.map(serv => {
-        var begin = new Date(serv.started_at)
-        var end = new Date(serv.finished_at)
-        var hours = Math.abs(
-            end - begin
-        );
-        hours = hours/1000/60/60; // converting milisec to hours
-        return (
-            <View key={serv.id} style={{
+        {props.users?(props.users.map(user => {
+            console.log(user);
+            return user.roles.indexOf('root')<0?(
+            <View key={user.id} style={{
                 ...styles.box,
                 ...styles.border,
                 }}>
@@ -100,43 +95,48 @@ function ServList (props) {
                                     height: size,
                                     tintColor: '#23B185',
                                 }}/>)}/>
-                </View>
 
+                </View>
 
                 <Text style={{
                     color: '#555',
                     fontWeight: 'bold',
                     fontSize: 16,
-                }}>{serv.description}</Text>
-
-
-                {hours>0?(<Text style={{
-                    color: '#555',
-                    fontSize: 16,
-                }}>Carga horária: {
-                    Math.trunc(hours)>0? `${Math.trunc(hours)} hora`+(
-                        Math.trunc(hours)>1?'s':''
-                    ): '' } {  hours%1>0?((Math.trunc(hours)>0?'e':''
-                    )+ ` ${Math.trunc((hours%1*100))} minuto`+(
-                        Math.trunc(hours%1*100)>1?'s':'') ):''
-                    }</Text>):null}
-
+                }}>{user.name}</Text>
 
                 <Text style={{
                     color: '#555',
                     fontSize: 16,
-                }}>Preço: {(serv.price*hours).toFixed(2).replace('.',',')} R$</Text>
+                }}>CPF: {user.document}</Text>
 
+                <Text style={{
+                    color: '#555',
+                    fontSize: 16,
+                }}>Telefone: ({user.phone.slice(0, 2)}) {user.phone.slice(2, user.phone.length-4)}-{user.phone.slice(user.phone.length-4, user.phone.length)}</Text>
 
+                <View style={styles.row}>
+                    {user.roles?(
+                        user.roles.map(
+                            role => (
+                                <Text style={{
+                                    color: '#F55',
+                                    fontSize: 16,
+                                }}>
+                                    {' '+role+' '}
+                                </Text>
+                            )
+                        )):null}
+                </View>
 
-            </View>
-        );
-    } )): (<Text style={{
-        color: '#555',
-        fontSize: 17,
-        padding: 15,
-        margin: 15,
-    }}>Nenhum serviço foi encontrado.</Text>)}</ScrollView>);
+            </View>):null;
+        } )) :(<Text style={{
+            color: '#555',
+            fontSize: 17,
+            padding: 15,
+            margin: 15,
+        }}>Nenhum usuário foi encontrado.</Text>
+        )
+        }</ScrollView>);
 }
 
-export default ServList;
+export default UserList;

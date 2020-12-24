@@ -13,10 +13,14 @@ import { TouchableOpacity } from 'react-native-gesture-handler';
 import api, { updateServs, updateFarms, updateUsers } from '../services/api';
 import ServList from '../components/ServList';
 import FarmList from '../components/FarmList';
+import UserList from '../components/UserList';
 import LogoutButton from '../components/LogoutButton';
+
+import styles from '../Styles'
 
 export default function List({ navigation }) {
     const [curr, setCurr] = useState(null);
+    const [active, setActive] = useState('user');
 
     const [users, setUsers] = useState(null);
     const [servs, setServs] = useState(null);
@@ -43,6 +47,11 @@ export default function List({ navigation }) {
                     console.log('UPDATING FARMS ', r);
                     setFarms(r)
                 });
+
+                updateUsers().then(r => {
+                    console.log('UPDATING USERS ', r);
+                    setUsers(r)
+                });
             }
         });
     }
@@ -55,7 +64,35 @@ export default function List({ navigation }) {
             user={curr}
             action={logout}/>
 
-        <View style={{...styles.container, ...styles.center}}>
+        <View style={{...styles.container, ...styles.center,
+                paddingVertical: 20,
+            }}>
+
+            <View style={{...styles.line,
+                marginTop: 15,
+                marginBottom: 5,
+            }}></View>
+            {active == 'user'?(
+            <UserList
+                users={users}
+                onRefresh={() => {
+                    updateUsers().then(r => {
+                        console.log('UPDATING USERS ', r);
+                        setUsers(r)
+                    });
+                }}
+                onEdit={() => {}}
+                onRemove={() => {}}
+            />
+            ):(<Text onPress={()=>{
+                setActive('user');
+            }}>Usuários</Text>)}
+
+            <View style={{...styles.line,
+                marginTop: 15,
+                marginBottom: 5,
+            }}></View>
+            {active == 'farm'?(
             <FarmList
                 farms={farms}
                 onRefresh={() => {
@@ -67,7 +104,15 @@ export default function List({ navigation }) {
                 onEdit={() => {}}
                 onRemove={() => {}}
             />
+            ):(<Text onPress={()=>{
+                setActive('farm');
+            }}>Fazendas</Text>)}
 
+            <View style={{...styles.line,
+                marginTop: 15,
+                marginBottom: 5,
+            }}></View>
+            {active == 'serv'?(
             <ServList
                 servs={servs}
                 onRefresh={() => {
@@ -79,57 +124,11 @@ export default function List({ navigation }) {
                 onEdit={() => {}}
                 onRemove={() => {}}
             />
+            ):(<Text onPress={()=>{
+                setActive('serv');
+            }}>Serviços</Text>)}
+
         </View>
 
     </SafeAreaView>)
 }
-
-const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-    },
-    logo: {
-        height: 40,
-        resizeMode: 'contain',
-        marginTop: 20
-    },
-    row: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'stretch',
-        justifyContent: 'center',
-    },
-    center: {
-        alignItems:'center',
-        justifyContent:'center',
-    },
-    title: {
-        color: '#23B185',
-        fontWeight: 'bold',
-        fontSize: 16,
-        marginBottom: 30
-    },
-    button: {
-        height: 32,
-        backgroundColor: '#23B185',
-        justifyContent: 'center',
-        alignItems:'center',
-        borderRadius:2,
-        marginTop: 15,
-        padding: 10,
-    },
-    buttonText:{
-        color: '#FFF',
-        fontWeight:'bold',
-        fontSize:15,
-    },
-    box: {
-        padding: 10,
-        minWidth: 300,
-        borderRadius: 2,
-        borderColor: '#23B185',
-        borderWidth: 1,
-        marginTop: 5,
-        marginBottom: 5,
-    },
-});

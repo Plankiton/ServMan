@@ -1,12 +1,12 @@
 import React from 'react';
 import {Text,
-        StyleSheet,
         Image } from 'react-native';
 import { TouchableOpacity } from 'react-native-gesture-handler';
+import styles from '../Styles'
 
 import logo from '../assets/logo.png';
 
-function LogoutButton(props) {
+export default function LogoutButton(props) {
     return (<TouchableOpacity
         style={styles.center}
         onPress={props.action}>
@@ -16,23 +16,3 @@ function LogoutButton(props) {
         </Text>
     </TouchableOpacity>);
 }
-
-const styles = StyleSheet.create({
-    logo: {
-        height: 40,
-        resizeMode: 'contain',
-        marginTop: 20
-    },
-    center: {
-        alignItems:'center',
-        justifyContent:'center',
-    },
-    title: {
-        color: '#23B185',
-        fontWeight: 'bold',
-        fontSize: 16,
-        marginBottom: 30
-    },
-});
-
-export default LogoutButton;

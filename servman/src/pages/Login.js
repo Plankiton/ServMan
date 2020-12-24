@@ -14,18 +14,16 @@ import { Platform } from '@unimodules/core';
 import axios from "axios";
 import api from '../services/api'
 
+import styles from '../Styles';
+
 export default function Login({navigation}) {
     const [doc, setDoc] = useState('');
     const [pass, setPass] = useState('');
 
     useEffect(()=>{
-        AsyncStorage.getItem('user').then(user=>{
+        AsyncStorage.getItem('curr_user').then(user=>{
             if (user) {
-                AsyncStorage.getItem('token').then(token=>{
-                    if (token) {
-                        navigation.navigate('List');
-                    }
-                });
+                navigation.navigate('List');
             }
         });
     },[]);
@@ -98,55 +96,3 @@ export default function Login({navigation}) {
         </KeyboardAvoidingView>
     )
 }
-const styles = StyleSheet.create({
-   container: {
-       flex:1,
-       justifyContent:'center',
-       alignItems:'center'
-   }, 
-   box:{
-        alignSelf: 'stretch',
-        paddingHorizontal: 30,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 30,
-   },
-   form:{
-        alignSelf: 'stretch',
-        paddingHorizontal: 30,
-        marginTop: 30,
-        marginBottom: 30,
-   },
-   label: {
-       fontWeight: 'bold',
-       color:'#444',
-       marginBottom:8
-   },
-   input: {
-       borderWidth:1,
-       borderColor: '#ddd',
-       paddingHorizontal:20,
-       fontSize: 16,
-       color:'#444',
-       height: 44,
-       marginBottom: 20,
-       borderRadius: 2
-   },
-   button: {
-       height: 42,
-       backgroundColor: '#23B185',
-       justifyContent: 'center',
-       alignItems:'center',
-       borderRadius:2,
-   },
-   buttonText:{
-       color: '#FFF',
-       fontWeight:'bold',
-       fontSize:16,
-   },
-   linkText: {
-       color: '#23B185',
-       fontWeight:'bold',
-       fontSize:16,
-   },
-});
