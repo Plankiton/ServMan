@@ -43,12 +43,13 @@ export default function Login({navigation}) {
 
             if (person_id && token) {
                 const r = await api.post(`/user/${person_id}`)
-                await AsyncStorage.setItem('curr_user',JSON.stringify({
+                await AsyncStorage.setItem('curr_user', JSON.stringify({
                     ...r.data.data,
                     token: token,
                 }));
-                console.log(r.data.data);
-                navigation.navigate('List');
+                AsyncStorage.getItem('curr_user').then(user=> {
+                    navigation.navigate('List');
+                });
             } else {
                 Alert.alert(`CPF ou Senha estão errados!!`);
             }
