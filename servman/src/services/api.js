@@ -48,7 +48,7 @@ async function updateServs(user = null, farm = null) {
     return null;
 }
 
-async function updateUsers() {
+async function updateUsers(user_id = null) {
     var new_users = [];
 
     console.log(`/user/`);
@@ -57,6 +57,10 @@ async function updateUsers() {
         :''));
 
     if (r) {
+        if (user_id) {
+            return r.data.data;
+        }
+
         new_users = [...new Set(r.data.data)]
         if (new_users.length > 0)
             return new_users;
