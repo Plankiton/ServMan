@@ -35,7 +35,7 @@ export default function List({ navigation }) {
         AsyncStorage.getItem('curr_user').then(user=> {
             if (user) {
                 user = JSON.parse(user);
-                    setCurr(user)
+                setCurr(user);
 
                 console.log('current_user [state]:', user);
                 updateServs(user).then(r => {
@@ -48,9 +48,9 @@ export default function List({ navigation }) {
                     setFarms(r)
                 });
 
-                updateUsers().then(r => {
+                updateUsers(user).then(r => {
                     console.log('UPDATING USERS ', r);
-                    setUsers(r)
+                    setUsers(r);
                 });
             }
         });
@@ -68,7 +68,7 @@ export default function List({ navigation }) {
                 paddingVertical: 20,
             }}>
 
-            <View style={{...styles.line,
+            {curr.roles.indexOf('root')>-1?(<><View style={{...styles.line,
                 marginTop: 15,
                 marginBottom: 5,
             }}></View>
@@ -76,7 +76,7 @@ export default function List({ navigation }) {
             <UserList
                 users={users}
                 onRefresh={() => {
-                    updateUsers().then(r => {
+                    updateUsers(curr).then(r => {
                         console.log('UPDATING USERS ', r);
                         setUsers(r)
                     });
@@ -86,7 +86,7 @@ export default function List({ navigation }) {
             />
             ):(<Text onPress={()=>{
                 setActive('user');
-            }}>Usuários</Text>)}
+            }}>Usuários</Text>)}</>):null}
 
             <View style={{...styles.line,
                 marginTop: 15,
