@@ -6,7 +6,7 @@ import {Text,
     Image} from 'react-native';
 import {Button} from 'react-native-paper';
 
-function ServList (props) {
+function FarmList(props) {
     return (<ScrollView styles={styles.container}>
         <Button
             onPress={props.onRefresh}
@@ -29,19 +29,11 @@ function ServList (props) {
             <Text style={{
                 ...styles.title,
                 fontSize: 16
-            }}>Serviços</Text>
+            }}>Fazendas</Text>
         </Button>
-
-
-        {props.servs?(props.servs.map(serv => {
-        var begin = new Date(serv.started_at)
-        var end = new Date(serv.finished_at)
-        var hours = Math.abs(
-            end - begin
-        );
-        hours = hours/1000/60/60; // converting milisec to hours
-        return (
-            <View key={serv.id} style={styles.box}>
+        {props.farms?(props.farms.map(farm => {
+            console.log(farm);
+            return (<View key={farm.id} style={styles.box}>
 
                 <View style={{...styles.row,
                     justifyContent: 'flex-end',
@@ -66,43 +58,33 @@ function ServList (props) {
                                     height: size,
                                     tintColor: '#23B185',
                                 }}/>)}/>
-                </View>
 
+                </View>
 
                 <Text style={{
                     color: '#555',
                     fontWeight: 'bold',
                     fontSize: 16,
-                }}>{serv.description}</Text>
+                }}>{farm.name}</Text>
 
+                {farm.addr?(
+                    <Text style={{
+                        color: '#555',
+                        fontSize: 16,
+                    }}>
+                        Rua {farm.addr.street}, {farm.addr.number}, {farm.addr.city} - {farm.addr.state}
+                    </Text>
+                ):null}
 
-                {hours>0?(<Text style={{
-                    color: '#555',
-                    fontSize: 16,
-                }}>Carga horária: {
-                    Math.trunc(hours)>0? `${Math.trunc(hours)} hora`+(
-                        Math.trunc(hours)>1?'s':''
-                    ): '' } {  hours%1>0?((Math.trunc(hours)>0?'e':''
-                    )+ ` ${Math.trunc((hours%1*100))} minuto`+(
-                        Math.trunc(hours%1*100)>1?'s':'') ):''
-                    }</Text>):null}
-
-
-                <Text style={{
-                    color: '#555',
-                    fontSize: 16,
-                }}>Preço: {(serv.price*hours).toFixed(2).replace('.',',')} R$</Text>
-
-
-
-            </View>
-        );
-    } )): (<Text style={{
-        color: '#555',
-        fontSize: 17,
-        padding: 15,
-        margin: 15,
-    }}>Nenhum serviço foi encontrado.</Text>)}</ScrollView>);
+            </View>);
+        } )) :(<Text style={{
+            color: '#555',
+            fontSize: 17,
+            padding: 15,
+            margin: 15,
+        }}>Nenhuma fazenda foi encontrada.</Text>
+        )
+        }</ScrollView>);
 }
 
 const styles = StyleSheet.create({
@@ -158,4 +140,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default ServList;
+export default FarmList;

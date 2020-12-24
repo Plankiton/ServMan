@@ -2,25 +2,24 @@ import React, { useState, useEffect } from 'react';
 import { SafeAreaView,
     Text,
     View,
-    ScrollView,
     AsyncStorage,
     StyleSheet,
+    ScrollView,
     Image,
     Alert } from 'react-native';
 import {Button} from 'react-native-paper';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 
-import logo from '../assets/logo.png';
-
-
+import api, { updateServs, updateFarms, updateUsers } from '../services/api';
 import ServList from '../components/ServList';
-import api from '../services/api';
+import FarmList from '../components/FarmList';
+import LogoutButton from '../components/LogoutButton';
 
 export default function List({ navigation }) {
     const [curr, setCurr] = useState(null);
 
-    const [servs, setServs] = useState(null);
     const [users, setUsers] = useState(null);
+    const [servs, setServs] = useState(null);
     const [farms, setFarms] = useState(null);
 
     function logout() {
@@ -28,40 +27,23 @@ export default function List({ navigation }) {
         navigation.navigate('Login');
     }
 
-    async function updateServs(user = null, farm = null) {
-        var new_servs = servs;
-
-        var r = null;
-        if (user) {
-            console.log(`/user/${user.id}/serv`);
-            r = await api.get(`/user/${user.id}/serv`);
-        } else if (farm) {
-            console.log(`/user/farm/${farm.id}/serv`);
-            r = await api.get(`/user/farm/${farm.id}/serv`);
-        } else if (user && user.roles.indexOf('root')) {
-            console.log(`/serv`);
-            r = await api.get(`/serv`);
-        }
-
-        if (r) {
-            new_servs = [...new Set(r.data.data)]
-            console.log('UPDATING SERVICES ', new_servs)
-            if (new_servs.lenght > 0) {
-                setServs(new_servs);
-            } else {
-                setServs(null);
-            }
-        }
-
-        return new_servs;
-    }
-
     async function updateCurrUser() {
         AsyncStorage.getItem('curr_user').then(user=> {
-            setCurr(JSON.parse(user))
+            if (user) {
+                user = JSON.parse(user);
+                    setCurr(user)
 
-            console.log('current_user [state]:', curr);
-            updateServs(user = curr);
+                console.log('current_user [state]:', user);
+                updateServs(user).then(r => {
+                    console.log('UPDATING SERVICES ', r);
+                    setServs(r)
+                });
+
+                updateFarms(user).then(r => {
+                    console.log('UPDATING FARMS ', r);
+                    setFarms(r)
+                });
+            }
         });
     }
 
@@ -69,44 +51,42 @@ export default function List({ navigation }) {
         updateCurrUser();
     },[]);
     return (<SafeAreaView style={styles.container}>
-        <TouchableOpacity
-            style={styles.center}
-            onPress={()=>logout()}>
-            <Image style={styles.logo} source={logo}/>
-            <Text style={styles.title}>
-                Sair {curr? ` da conta do ${curr.name}` :''}
-            </Text>
-        </TouchableOpacity>
-        <View style={{
-            alignItems: 'center',
-            ...styles.box}}>
-            <Button
-                onPress={() => {
-                    updateServs(user = curr);
+        <LogoutButton
+            user={curr}
+            action={logout}/>
+
+        <View style={{...styles.container, ...styles.center}}>
+            <FarmList
+                farms={farms}
+                onRefresh={() => {
+                    updateFarms(curr).then(r => {
+                        console.log('UPDATING FARMS ', r);
+                        setFarms(r)
+                    });
                 }}
-                icon={({ size, color }) => (
-                    <Image
-                        source={require("../assets/refresh.png")}
-                        style={{
-                            width: size,
-                            height: size,
-                            tintColor: '#23B185',
-                            padding: 10,
-                        }}
-                    />)}>
-                <Text style={{
-                    ...styles.title,
-                    fontSize: 20
-                }}>Serviços</Text>
-            </Button>
+                onEdit={() => {}}
+                onRemove={() => {}}
+            />
+
+            <ServList
+                servs={servs}
+                onRefresh={() => {
+                    updateServs(curr).then(r => {
+                        console.log('UPDATING SERVICES ', r);
+                        setServs(r)
+                    });
+                }}
+                onEdit={() => {}}
+                onRemove={() => {}}
+            />
         </View>
-        <ServList servs={servs}/>
+
     </SafeAreaView>)
 }
+
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
     },
     logo: {
         height: 40,
@@ -144,11 +124,12 @@ const styles = StyleSheet.create({
         fontSize:15,
     },
     box: {
-        padding: 15,
+        padding: 10,
         minWidth: 300,
         borderRadius: 2,
         borderColor: '#23B185',
         borderWidth: 1,
-        marginTop: 15,
+        marginTop: 5,
+        marginBottom: 5,
     },
 });
