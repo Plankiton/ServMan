@@ -22,13 +22,39 @@ export default function List({ navigation }) {
     const [curr, setCurr] = useState(null);
     const [active, setActive] = useState('user');
 
-    const [users, setUsers] = useState(null);
-    const [servs, setServs] = useState(null);
-    const [farms, setFarms] = useState(null);
+    const [users, setUsers] = useState([]);
+    const [servs, setServs] = useState([]);
+    const [farms, setFarms] = useState([]);
 
-    function logout() {
-        AsyncStorage.clear();
-        navigation.navigate('Login');
+    async function updateScreen(screen, user = null) {
+        setActive(screen);
+
+        if (screen == 'serv') {
+            setFarms([]);
+            setUsers([]);
+            updateServs(curr?curr:user).then(r => {
+                console.log('UPDATING SERVICES ', r);
+                setServs(r)
+            });
+        }
+
+        else if (screen == 'farm') {
+            setServs([]);
+            setUsers([]);
+            updateFarms(curr?curr:user).then(r => {
+                console.log('UPDATING FARMS ', r);
+                setFarms(r)
+            });
+        }
+
+        else if (screen == 'user') {
+            setFarms([]);
+            setServs([]);
+            updateUsers(curr?curr:user).then(r => {
+                console.log('UPDATING USERS ', r);
+                setUsers(r);
+            });
+        }
     }
 
     async function updateCurrUser() {
@@ -37,21 +63,8 @@ export default function List({ navigation }) {
                 user = JSON.parse(user);
                 setCurr(user);
 
-                console.log('current_user [state]:', user);
-                updateServs(user).then(r => {
-                    console.log('UPDATING SERVICES ', r);
-                    setServs(r)
-                });
-
-                updateFarms(user).then(r => {
-                    console.log('UPDATING FARMS ', r);
-                    setFarms(r)
-                });
-
-                updateUsers(user).then(r => {
-                    console.log('UPDATING USERS ', r);
-                    setUsers(r);
-                });
+                updateScreen(user.roles.indexOf('root')>-1?
+                    'user':'serv', user);
             }
         });
     }
@@ -61,14 +74,14 @@ export default function List({ navigation }) {
     },[]);
     return (<SafeAreaView style={styles.container}>
         <LogoutButton
-            user={curr}
-            action={logout}/>
+            navigation={navigation}
+            user={curr}/>
 
         <View style={{...styles.container, ...styles.center,
                 paddingVertical: 20,
             }}>
 
-            {curr.roles.indexOf('root')>-1?(<><View style={{...styles.line,
+            {curr && curr.roles.indexOf('root')>-1?(<><View style={{...styles.line,
                 marginTop: 15,
                 marginBottom: 5,
             }}></View>
@@ -84,8 +97,8 @@ export default function List({ navigation }) {
                 onEdit={() => {}}
                 onRemove={() => {}}
             />
-            ):(<Text onPress={()=>{
-                setActive('user');
+            ):(<Text style={styles.title} onPress={()=>{
+                updateScreen('user');
             }}>Usuários</Text>)}</>):null}
 
             <View style={{...styles.line,
@@ -104,8 +117,8 @@ export default function List({ navigation }) {
                 onEdit={() => {}}
                 onRemove={() => {}}
             />
-            ):(<Text onPress={()=>{
-                setActive('farm');
+            ):(<Text style={styles.title} onPress={()=>{
+                updateScreen('farm');
             }}>Fazendas</Text>)}
 
             <View style={{...styles.line,
@@ -124,8 +137,8 @@ export default function List({ navigation }) {
                 onEdit={() => {}}
                 onRemove={() => {}}
             />
-            ):(<Text onPress={()=>{
-                setActive('serv');
+            ):(<Text style={styles.title} onPress={()=>{
+                updateScreen('serv');
             }}>Serviços</Text>)}
 
         </View>

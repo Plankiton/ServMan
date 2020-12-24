@@ -64,79 +64,80 @@ function ServList (props) {
         </View>
 
 
-        {props.servs?(props.servs.map(serv => {
-        var begin = new Date(serv.started_at)
-        var end = new Date(serv.finished_at)
-        var hours = Math.abs(
-            end - begin
-        );
-        hours = hours/1000/60/60; // converting milisec to hours
-        return (
-            <View key={serv.id} style={{
-                ...styles.box,
-                ...styles.border,
+        {props.servs && props.servs.length>0 ?(props.servs.map(serv => {
+            var begin = new Date(serv.started_at)
+            var end = new Date(serv.finished_at)
+            var hours = Math.abs(
+                end - begin
+            );
+            hours = hours/1000/60/60; // converting milisec to hours
+            return (
+                <View key={serv.id} style={{
+                    ...styles.box,
+                    ...styles.border,
                 }}>
 
-                <View style={{...styles.row,
-                    justifyContent: 'flex-end',
-                }}>
-                    <Button
-                        onPress={props.onEdit}
-                        icon={({ size, color }) => (
-                            <Image
-                                source={require("../assets/pencil.png")}
-                                style={{
-                                    width: size,
-                                    height: size,
-                                    tintColor: '#23B185',
-                                }}/>)}/>
-                    <Button
-                        onPress={props.onRemove}
-                        icon={({ size, color }) => (
-                            <Image
-                                source={require("../assets/trash.png")}
-                                style={{
-                                    width: size,
-                                    height: size,
-                                    tintColor: '#23B185',
-                                }}/>)}/>
+                    <View style={{...styles.row,
+                        justifyContent: 'flex-end',
+                    }}>
+                        <Button
+                            onPress={props.onEdit}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/pencil.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
+                        <Button
+                            onPress={props.onRemove}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/trash.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
+                    </View>
+
+
+                    <Text style={{
+                        color: '#555',
+                        fontWeight: 'bold',
+                        fontSize: 16,
+                    }}>{serv.description}</Text>
+
+
+                    {hours>0?(<Text style={{
+                        color: '#555',
+                        fontSize: 16,
+                    }}>Carga horária: {
+                        Math.trunc(hours)>0? `${Math.trunc(hours)} hora`+(
+                            Math.trunc(hours)>1?'s':''
+                        ): '' } {  hours%1>0?((Math.trunc(hours)>0?'e':''
+                        )+ ` ${Math.trunc((hours%1*100))} minuto`+(
+                            Math.trunc(hours%1*100)>1?'s':'') ):''
+                        }</Text>):null}
+
+
+                    <Text style={{
+                        color: '#555',
+                        fontSize: 16,
+                    }}>Preço: {(serv.price*hours).toFixed(2).replace('.',',')} R$</Text>
+
+
+
                 </View>
-
-
-                <Text style={{
-                    color: '#555',
-                    fontWeight: 'bold',
-                    fontSize: 16,
-                }}>{serv.description}</Text>
-
-
-                {hours>0?(<Text style={{
-                    color: '#555',
-                    fontSize: 16,
-                }}>Carga horária: {
-                    Math.trunc(hours)>0? `${Math.trunc(hours)} hora`+(
-                        Math.trunc(hours)>1?'s':''
-                    ): '' } {  hours%1>0?((Math.trunc(hours)>0?'e':''
-                    )+ ` ${Math.trunc((hours%1*100))} minuto`+(
-                        Math.trunc(hours%1*100)>1?'s':'') ):''
-                    }</Text>):null}
-
-
-                <Text style={{
-                    color: '#555',
-                    fontSize: 16,
-                }}>Preço: {(serv.price*hours).toFixed(2).replace('.',',')} R$</Text>
-
-
-
-            </View>
-        );
-    } )): (<Text style={{
-        color: '#555',
-        fontSize: 17,
-        padding: 15,
-        margin: 15,
-    }}>Nenhum serviço foi encontrado.</Text>)}</ScrollView>);
+            );
+        } )): (<Text style={{
+            color: '#555',
+            fontSize: 17,
+            padding: 15,
+            margin: 15,
+        }}>{props.servs?'carregando...':'Nenhum serviço foi encontrado.'}</Text>
+        )}</ScrollView>);
 }
 
 export default ServList;

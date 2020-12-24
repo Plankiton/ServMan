@@ -23,7 +23,6 @@ const styles = StyleSheet.create({
         color: '#23B185',
         fontWeight: 'bold',
         fontSize: 16,
-        marginBottom: 30
     },
     button: {
         height: 32,
@@ -49,14 +48,22 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         justifyContent: 'space-between',
         marginTop: 30,
-   },
-   border:{
+    },
+    login: {
+        alignSelf: 'stretch',
+        alignItems: 'center',
+        paddingHorizontal: 30,
+        paddingVertical: 10,
+        justifyContent: 'space-between',
+        marginTop: 30,
+    },
+    border:{
         borderRadius: 2,
         borderTopWidth: 1,
         borderColor: '#23B185',
-   },
+    },
 
-   line:{
+    line:{
         borderRadius: 2,
         borderTopWidth: 1,
         borderColor: '#23B185',

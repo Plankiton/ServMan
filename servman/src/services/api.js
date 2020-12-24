@@ -1,6 +1,6 @@
 import axios from "axios";
 const api = axios.create({
-    baseURL: 'http://192.168.2.38:8000',
+    baseURL: 'http://10.0.0.12:8000',
 })
 
 async function updateFarms(user = null) {
@@ -54,7 +54,7 @@ async function updateUsers(user = null) {
 
     var r = null;
     if (user && user.roles.indexOf('root') > -1) {
-        console.log(`/user/`);
+        console.log('/user/');
         r = await api.get('/user');
     }
 

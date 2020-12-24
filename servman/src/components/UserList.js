@@ -64,77 +64,76 @@ function UserList(props) {
         </View>
 
 
-        {props.users?(props.users.map(user => {
-            console.log(user);
+        {props.users && props.users.length>0 ?(props.users.map(user => {
             return user.roles.indexOf('root')<0?(
-            <View key={user.id} style={{
-                ...styles.box,
-                ...styles.border,
+                <View key={user.id} style={{
+                    ...styles.box,
+                    ...styles.border,
                 }}>
 
-                <View style={{...styles.row,
-                    justifyContent: 'flex-end',
-                }}>
-                    <Button
-                        onPress={props.onEdit}
-                        icon={({ size, color }) => (
-                            <Image
-                                source={require("../assets/pencil.png")}
-                                style={{
-                                    width: size,
-                                    height: size,
-                                    tintColor: '#23B185',
-                                }}/>)}/>
-                    <Button
-                        onPress={props.onRemove}
-                        icon={({ size, color }) => (
-                            <Image
-                                source={require("../assets/trash.png")}
-                                style={{
-                                    width: size,
-                                    height: size,
-                                    tintColor: '#23B185',
-                                }}/>)}/>
+                    <View style={{...styles.row,
+                        justifyContent: 'flex-end',
+                    }}>
+                        <Button
+                            onPress={props.onEdit}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/pencil.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
+                        <Button
+                            onPress={props.onRemove}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/trash.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
 
-                </View>
+                    </View>
 
-                <Text style={{
-                    color: '#555',
-                    fontWeight: 'bold',
-                    fontSize: 16,
-                }}>{user.name}</Text>
+                    <Text style={{
+                        color: '#555',
+                        fontWeight: 'bold',
+                        fontSize: 16,
+                    }}>{user.name}</Text>
 
-                <Text style={{
-                    color: '#555',
-                    fontSize: 16,
-                }}>CPF: {user.document}</Text>
+                    <Text style={{
+                        color: '#555',
+                        fontSize: 16,
+                    }}>CPF: {user.document}</Text>
 
-                <Text style={{
-                    color: '#555',
-                    fontSize: 16,
-                }}>Telefone: ({user.phone.slice(0, 2)}) {user.phone.slice(2, user.phone.length-4)}-{user.phone.slice(user.phone.length-4, user.phone.length)}</Text>
+                    <Text style={{
+                        color: '#555',
+                        fontSize: 16,
+                    }}>Telefone: ({user.phone.slice(0, 2)}) {user.phone.slice(2, user.phone.length-4)}-{user.phone.slice(user.phone.length-4, user.phone.length)}</Text>
 
-                <View style={styles.row}>
-                    {user.roles?(
-                        user.roles.map(
-                            role => (
-                                <Text style={{
-                                    color: '#F55',
-                                    fontSize: 16,
-                                }}>
-                                    {' '+role+' '}
-                                </Text>
-                            )
-                        )):null}
-                </View>
+                    <View style={styles.row}>
+                        {user.roles?(
+                            user.roles.map(
+                                role => (
+                                    <Text style={{
+                                        color: '#F55',
+                                        fontSize: 16,
+                                    }}>
+                                        {' '+role+' '}
+                                    </Text>
+                                )
+                            )):null}
+                    </View>
 
-            </View>):null;
+                </View>):null;
         } )) :(<Text style={{
             color: '#555',
             fontSize: 17,
             padding: 15,
             margin: 15,
-        }}>Nenhum usuário foi encontrado.</Text>
+        }}>{props.users?'carregando...':'Nenhum usuário foi encontrado.'}</Text>
         )
         }</ScrollView>);
 }

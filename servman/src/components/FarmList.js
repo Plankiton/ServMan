@@ -64,62 +64,62 @@ function FarmList(props) {
         </View>
 
 
-        {props.farms?(props.farms.map(farm => {
+        {props.farms && props.farms.length>0 ?(props.farms.map(farm => {
             console.log(farm);
             return (
-            <View key={farm.id} style={{
-                ...styles.box,
-                ...styles.border,
+                <View key={farm.id} style={{
+                    ...styles.box,
+                    ...styles.border,
                 }}>
 
-                <View style={{...styles.row,
-                    justifyContent: 'flex-end',
-                }}>
-                    <Button
-                        onPress={props.onEdit}
-                        icon={({ size, color }) => (
-                            <Image
-                                source={require("../assets/pencil.png")}
-                                style={{
-                                    width: size,
-                                    height: size,
-                                    tintColor: '#23B185',
-                                }}/>)}/>
-                    <Button
-                        onPress={props.onRemove}
-                        icon={({ size, color }) => (
-                            <Image
-                                source={require("../assets/trash.png")}
-                                style={{
-                                    width: size,
-                                    height: size,
-                                    tintColor: '#23B185',
-                                }}/>)}/>
+                    <View style={{...styles.row,
+                        justifyContent: 'flex-end',
+                    }}>
+                        <Button
+                            onPress={props.onEdit}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/pencil.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
+                        <Button
+                            onPress={props.onRemove}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/trash.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
 
-                </View>
+                    </View>
 
-                <Text style={{
-                    color: '#555',
-                    fontWeight: 'bold',
-                    fontSize: 16,
-                }}>{farm.name}</Text>
-
-                {farm.addr?(
                     <Text style={{
                         color: '#555',
+                        fontWeight: 'bold',
                         fontSize: 16,
-                    }}>
-                        Rua {farm.addr.street}, {farm.addr.number}, {farm.addr.city} - {farm.addr.state}
-                    </Text>
-                ):null}
+                    }}>{farm.name}</Text>
 
-            </View>);
+                    {farm.addr?(
+                        <Text style={{
+                            color: '#555',
+                            fontSize: 16,
+                        }}>
+                            Rua {farm.addr.street}, {farm.addr.number}, {farm.addr.city} - {farm.addr.state}
+                        </Text>
+                    ):null}
+
+                </View>);
         } )) :(<Text style={{
             color: '#555',
             fontSize: 17,
             padding: 15,
             margin: 15,
-        }}>Nenhuma fazenda foi encontrada.</Text>
+        }}>{props.farms?'carregando...':'Nenhuma fazenda foi encontrada.'}</Text>
         )
         }</ScrollView>);
 }
