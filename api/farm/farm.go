@@ -25,8 +25,8 @@ type Addr struct {
 
 type Farm struct {
     ID        string `json:"id,omitempty" gorm:"primaryKey"`
-    PersonId  string `json:"person_id,omitempty"`
-    AddressId string `json:"address_id,omitempty" gorm:"uniqueIndex"`
+    PersonId  string `json:"person,omitempty"`
+    AddressId string `json:"address,omitempty" gorm:"uniqueIndex"`
     Name      string `json:"name,omitempty" gorm:"index"`
 
     CreateTime time.Time `json:"created_at,omitempty" gorm:"index"`
@@ -39,6 +39,47 @@ func PopulateDB(db *gorm.DB) {
     database = db
     database.AutoMigrate(&Farm{})
     database.AutoMigrate(&Addr{})
+}
+
+func GetAddr(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+    addr := Addr{}
+
+    farm := Farm{}
+    res := database.Where("id = ?", params["id"]).First(&farm)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The farm not found!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
+    }
+
+    res = database.Where("id = ?", farm.AddressId).First(&addr)
+    if errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The farm dont have address!",
+            Code: "NotFound",
+            Type: "error",
+            Data: nil,
+        })
+
+        return
+    }
+
+    // TODO: sentence for validate logged user
+    json.NewEncoder(w).Encode(util.Response{
+            Code: "GetAddr",
+            Type: "sucess",
+            Data: addr,
+        })
 }
 
 // GetPeople mostra todos os contatos da variável farm
@@ -85,7 +126,7 @@ func GetFarm(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
     farm := Farm{}
 
-    res := database.First(&farm, params["id"])
+    res := database.Where("id = ?", params["id"]).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
