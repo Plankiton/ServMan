@@ -34,10 +34,10 @@ func HttpAPI(router *mux.Router, db *gorm.DB) {
     router.HandleFunc("/user/{id}/farm", farm.GetFarms).Methods("GET")
 
     router.HandleFunc("/user/{id}/farm", farm.CreateFarm).Methods("POST")
-    router.HandleFunc("/user/farm/{id}", farm.GetFarm).Methods("GET")
-    router.HandleFunc("/user/farm/{id}", farm.DeleteFarm).Methods("DELETE")
-    router.HandleFunc("/user/farm/{id}", farm.UpdateFarm).Methods("POST")
-    router.HandleFunc("/user/farm/{id}/addr", farm.GetAddr).Methods("GET")
+    router.HandleFunc("/farm/{id}", farm.GetFarm).Methods("GET")
+    router.HandleFunc("/farm/{id}", farm.DeleteFarm).Methods("DELETE")
+    router.HandleFunc("/farm/{id}", farm.UpdateFarm).Methods("POST")
+    router.HandleFunc("/farm/{id}/addr", farm.GetAddr).Methods("GET")
     log.Output(2, "Routing Farm operations")
 
     // Serv
