@@ -214,15 +214,9 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-
     person := Person {}
 
-    person.Name      = body.Data["name"]
-    person.DocValue  = body.Data["document"]
-    person.Phone = body.Data["phone"]
-    person.DocType   = body.Data["doc_type"]
-
-    {
+    if body.Data["type"]!="" {
         prop := body.Data["type"];
         roleships := []RoleShip{}
         database.Where("person_id = ? ", person.ID).Find(&roleships)
@@ -275,6 +269,15 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
             }
         }}
 
+        person.Name      = body.Data["name"]
+        person.DocValue  = body.Data["document"]
+        person.Phone = body.Data["phone"]
+        person.DocType   = body.Data["doc_type"]
+
+        person.ID = util.ToHash(person.DocValue)
+
+        person.CreateTime = time.Now()
+        person.UpdateTime = time.Now()
 
         _, err := person.SetPass(body.Data["password"])
 
@@ -315,10 +318,15 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
 
             return
         }
+        roleships, types := []RoleShip{}, []string{}
+        database.Where("person_id = ? ", person.ID).Find(&roleships)
 
-        person.ID = util.ToHash(person.DocValue)
-        person.CreateTime = time.Now()
-        person.UpdateTime = time.Now()
+        for _, r := range(roleships) {
+            role := Role{}
+            database.Where("id = ?", r.RoleId).First(&role)
+
+            types = append(types, role.Name)
+        }
 
         database.Create(person)
         database.Commit()
@@ -331,7 +339,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
                 "name": person.Name,
                 "document": person.DocValue,
                 "phone": person.Phone,
-                "roles": []string{},
+                "roles": types,
                 "create_at": person.CreateTime,
                 "update_at": person.UpdateTime,
             },
@@ -413,7 +421,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
                         ship.PersonId = person.ID
                         ship.RoleId = role.ID
                         if role.Name == "" {
-                            database.First(&role, "client")
+                            database.Where("id = ?", "client").First(&role)
 
                             ship.PersonId = person.ID
                             ship.RoleId = role.ID
@@ -460,7 +468,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
 
         for _, r := range(roleships) {
             role := Role{}
-            database.First(&role, r.RoleId)
+            database.Where("id = ?", r.RoleId).First(&role)
 
             types = append(types, role.Name)
         }

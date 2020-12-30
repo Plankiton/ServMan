@@ -125,7 +125,8 @@ func DeleteToken(w http.ResponseWriter, r *http.Request) {
     person := user.Person{}
     if CheckToken(body.Token, &person) == nil {
         token := Token{}
-        database.Where("id = ?", body.Token).First(token)
+        database.Where("id = ?", body.Token).First(&token)
+        print(token.ID, " - ", person.Name, "\n")
         database.Delete(token)
         database.Commit()
         json.NewEncoder(w).Encode(util.Response {
