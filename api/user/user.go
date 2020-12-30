@@ -137,7 +137,7 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
 
     person := Person{}
     res := database.Where("doc_value = ? OR id = ?",
-        params["id"], params["id"]).First(&person)
+    params["id"], params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
@@ -158,7 +158,7 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
         role := Role{}
         res := database.First(&role, r.RoleId)
         if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            types = append(types, fmt.Sprintf("%i", r.RoleId))
+            types = append(types, role.Name)
         }
     }
 
@@ -189,7 +189,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
 
         json.NewEncoder(w).Encode(util.Response{
             Message: "The data sent is invalid!"+
-                     `(must be {"data": "..."})`,
+            `(must be {"data": "..."})`,
             Code: "BadRequest",
             Type: "error",
             Data: nil,
@@ -216,7 +216,61 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
 
     person := Person {}
 
-    if body.Data["type"]!="" {
+    person.Name      = body.Data["name"]
+    person.DocValue  = body.Data["document"]
+    person.Phone = body.Data["phone"]
+    person.DocType   = body.Data["doc_type"]
+    if person.DocType == "" {
+        person.DocType = "cpf"
+    }
+
+    person.ID = util.ToHash(person.DocValue)
+
+    person.CreateTime = time.Now()
+    person.UpdateTime = time.Now()
+
+    _, err := person.SetPass(body.Data["password"])
+
+    if err != nil {
+        w.WriteHeader(500)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "Error on creation of password hash on database!",
+            Code: "DbError",
+            Type: "error",
+        })
+
+        return
+    }
+
+    res := database.Where("doc_value = ?", person.DocValue).First(&Person{})
+    if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+        if res.Error != nil {
+            w.WriteHeader(400)
+
+            json.NewEncoder(w).Encode(util.Response{
+                Message: fmt.Sprintf("Database error: %s", res.Error),
+                Code: "BadRequest",
+                Type: "error",
+                Data: nil,
+            })
+
+            return
+        }
+
+        w.WriteHeader(403)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The user already exist!",
+            Code: "AlreadyExist",
+            Type: "error",
+        })
+
+        return
+    }
+
+
+    if body.Data["type"] != "" {
         prop := body.Data["type"];
         roleships := []RoleShip{}
         database.Where("person_id = ? ", person.ID).Find(&roleships)
@@ -267,93 +321,45 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
             if ship.PersonId != "" && ship.RoleId != 0 {
                 database.Create(&ship)
             }
-        }}
-
-        person.Name      = body.Data["name"]
-        person.DocValue  = body.Data["document"]
-        person.Phone = body.Data["phone"]
-        person.DocType   = body.Data["doc_type"]
-
-        person.ID = util.ToHash(person.DocValue)
-
-        person.CreateTime = time.Now()
-        person.UpdateTime = time.Now()
-
-        _, err := person.SetPass(body.Data["password"])
-
-        if err != nil {
-            w.WriteHeader(500)
-
-            json.NewEncoder(w).Encode(util.Response{
-                Message: "Error on creation of password hash on database!",
-                Code: "DbError",
-                Type: "error",
-            })
-
-            return
         }
-
-        res := database.Where("doc_value = ?", person.DocValue).First(&Person{})
-        if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            if res.Error != nil {
-                w.WriteHeader(400)
-
-                json.NewEncoder(w).Encode(util.Response{
-                    Message: fmt.Sprintf("Database error: %s", res.Error),
-                    Code: "BadRequest",
-                    Type: "error",
-                    Data: nil,
-                })
-
-                return
-            }
-
-            w.WriteHeader(403)
-
-            json.NewEncoder(w).Encode(util.Response{
-                Message: "The user already exist!",
-                Code: "AlreadyExist",
-                Type: "error",
-            })
-
-            return
-        }
-        roleships, types := []RoleShip{}, []string{}
-        database.Where("person_id = ? ", person.ID).Find(&roleships)
-
-        for _, r := range(roleships) {
-            role := Role{}
-            database.Where("id = ?", r.RoleId).First(&role)
-
-            types = append(types, role.Name)
-        }
-
-        database.Create(person)
-        database.Commit()
-
-        json.NewEncoder(w).Encode(util.Response {
-            Type: "sucess",
-            Code: "CreatedPerson",
-            Data: map[string]interface{} {
-                "id": person.ID,
-                "name": person.Name,
-                "document": person.DocValue,
-                "phone": person.Phone,
-                "roles": types,
-                "create_at": person.CreateTime,
-                "update_at": person.UpdateTime,
-            },
-        })
     }
 
-    func UpdatePerson(w http.ResponseWriter, r *http.Request) {
-        params := mux.Vars(r)
+    roleships, types := []RoleShip{}, []string{}
+    database.Where("person_id = ? ", person.ID).Find(&roleships)
 
-        var body util.Request
-        json.NewDecoder(r.Body).Decode(&body)
+    for _, r := range(roleships) {
+        role := Role{}
+        database.Where("id = ?", r.RoleId).First(&role)
 
-        person := Person{}
-        res := database.Where("id = ? OR doc_value = ?", params["id"], params["id"]).First(&person)
+        types = append(types, role.Name)
+    }
+
+    database.Create(person)
+    database.Commit()
+
+    json.NewEncoder(w).Encode(util.Response {
+        Type: "sucess",
+        Code: "CreatedPerson",
+        Data: map[string]interface{} {
+            "id": person.ID,
+            "name": person.Name,
+            "document": person.DocValue,
+            "phone": person.Phone,
+            "roles": types,
+            "create_at": person.CreateTime,
+            "update_at": person.UpdateTime,
+        },
+    })
+}
+
+func UpdatePerson(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+
+    var body util.Request
+    json.NewDecoder(r.Body).Decode(&body)
+
+    person := Person{}
+    res := database.Where("id = ? OR doc_value = ?", params["id"], params["id"]).First(&person)
         if errors.Is(res.Error, gorm.ErrRecordNotFound) {
             w.WriteHeader(404)
 
