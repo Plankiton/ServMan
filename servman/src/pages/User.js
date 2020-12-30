@@ -1,40 +1,81 @@
 import React, { useState, useEffect } from 'react';
-import { View, AsyncStorage, KeyboardAvoidingView ,Image, Text, TextInput, TouchableOpacity, StyleSheet} from 'react-native';
+import { View,
+    AsyncStorage,
+    KeyboardAvoidingView,
+    BackHandler,
+    Alert,
+    Image,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    StyleSheet} from 'react-native';
 import logo from '../assets/logo.png';
 import { Platform } from '@unimodules/core';
 
 import api from '../services/api'
-export default function Register({navigation}) {
-    const [email, setEmail] = useState('');
-    const [techs, setTechs] = useState('');
+export default function User({navigation}) {
+    const [name, setName] = useState('');
+    const [doc,   setDoc] = useState('');
+    const [pass, setPass] = useState('');
 
-    /*
-    useEffect(()=>{
-        AsyncStorage.getItem('user').then(user=>{
-            if(user) {
-                navigation.navigate('List')
-            }
-        }
-        )
-    },[]);
-    */
+    const [phone, setPhon] = useState('');
+    const [token, setToke] = useState('');
 
-    async function handleSubmit() {
-        navigation.navigate('List');
-        /*
-        const response = await api.post('/sessions', {
-            email
-        })
-        const {_id} = response.data;
-        await AsyncStorage.setItem('user', _id);
-        await AsyncStorage.setItem('techs', techs);
+    const [user, setUser] = useState(null);
 
-        navigation.navigate('List');
-        */
+    function handleBackButtonClick() {
+        console.log("backing...");
+        navigation.navigate(navigation.getParam('back'));
+        return true;
     }
 
-    async function goToRegister() {
-        navigation.navigate('Register');
+    useEffect(() => {
+        BackHandler.addEventListener('hardwareBackPress', handleBackButtonClick);
+        return () => {
+            BackHandler.removeEventListener('hardwareBackPress', handleBackButtonClick);
+        };
+    }, []);
+
+
+    useEffect(()=>{
+        const luser = navigation.getParam('user');
+        AsyncStorage.getItem('curr_user').then(curr=>{
+            if (curr) {
+                curr = JSON.parse(curr);
+                setToke(curr.token);
+            }
+        });
+
+        if(luser) {
+            setName(luser.name);
+            setPhon(luser.phone);
+            setDoc(luser.document);
+
+            setUser(luser);
+        }
+    },[]);
+
+    async function handleSubmit() {
+        var url = '/user';
+        if (user) {
+            url += `/${user.id}`;
+            setPass(null);
+        }
+
+        console.log(url,' ',token);
+        try {
+            const response = await api.post(url, {token,data: {
+                password: pass,
+                document: doc,
+                phone,
+                name,
+            }})
+
+            navigation.navigate('List');
+        } catch {
+            Alert.alert(`Não foi possível ${user?'editar':'criar'} ${name}`);
+        }
+
     }
 
     return (
@@ -45,6 +86,7 @@ export default function Register({navigation}) {
                 <Image source={logo}/>
 
                 <View style={styles.form}>
+
                     <Text style={styles.label}>Nome Completo</Text>
                     <TextInput
                         style={styles.input}
@@ -53,8 +95,9 @@ export default function Register({navigation}) {
                         keyboardType="default"
                         autoCapitalize="words"
                         autoCorrect={false}
-                        onChangeText={setEmail}
-                    >{email}</TextInput>
+                        onChangeText={setName}
+                    >{name}</TextInput>
+
                     <Text style={styles.label}>Número de Telefone</Text>
                     <TextInput
                         style={styles.input}
@@ -63,8 +106,9 @@ export default function Register({navigation}) {
                         keyboardType="default"
                         autoCapitalize="words"
                         autoCorrect={false}
-                        onChangeText={setEmail}
-                    >{email}</TextInput>
+                        onChangeText={setPhon}
+                    >{phone}</TextInput>
+
                     <Text style={styles.label}>CPF</Text>
                     <TextInput
                         style={styles.input}
@@ -73,26 +117,26 @@ export default function Register({navigation}) {
                         keyboardType="email-address"
                         autoCapitalize="none"
                         autoCorrect={false}
-                        value={email}
-                        onChangeText={setEmail}
+                        value={doc}
+                        onChangeText={setDoc}
                     >
                     </TextInput>
-                    <Text style={styles.label}>SENHA</Text>
-                    <TextInput 
+
+                    {!user?(<><Text style={styles.label}>SENHA</Text>
+                    <TextInput
                         style={styles.input}
                         placeholder="Digite sua senha"
                         placeholderTextColor="#999"
                         keyboardType={"default"}
                         secureTextEntry={true}
-                        onChangeText={setTechs}
-                    >{techs}</TextInput>
+                        onChangeText={setPass}
+                    >{pass}</TextInput></>):null}
 
                     <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-                        <Text style={styles.buttonText}>Entrar</Text>
+                        <Text style={styles.buttonText}>{user?'Salvar':'Criar usuário'}</Text>
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.linkText} onPress={goToRegister}>Não tem conta? Registre-se</Text>
             </View>
         </KeyboardAvoidingView>
     )

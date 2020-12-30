@@ -4,6 +4,7 @@ import { SafeAreaView,
     View,
     AsyncStorage,
     StyleSheet,
+    BackHandler,
     ScrollView,
     Image,
     Alert } from 'react-native';
@@ -25,6 +26,18 @@ export default function List({ navigation }) {
     const [users, setUsers] = useState([]);
     const [servs, setServs] = useState([]);
     const [farms, setFarms] = useState([]);
+
+    function handleBackButtonClick() {
+        console.log("backing...");
+        return true;
+    }
+
+    useEffect(() => {
+        BackHandler.addEventListener('hardwareBackPress', handleBackButtonClick);
+        return () => {
+            BackHandler.removeEventListener('hardwareBackPress', handleBackButtonClick);
+        };
+    }, []);
 
     async function updateScreen(screen, user = null) {
         setActive(screen);
@@ -58,15 +71,55 @@ export default function List({ navigation }) {
     }
 
     async function updateCurrUser() {
-        AsyncStorage.getItem('curr_user').then(user=> {
-            if (user) {
-                user = JSON.parse(user);
-                setCurr(user);
 
-                updateScreen(user.roles.indexOf('root')>-1?
-                    'user':'serv', user);
+        var user = await AsyncStorage.getItem('curr_user');
+
+        if (user) {
+            user = JSON.parse(user);
+            setCurr(user);
+
+            try {
+                const r = await api.post(`/user/${user.id}`)
+                updated_user = {
+                    ...r.data.data,
+                    token: token,
+                }
+
+                await AsyncStorage.setItem('curr_user',
+                    JSON.stringify(updated_user));
+
+                updateScreen(
+                    user.roles.indexOf('root')>-1?
+                    'user':'serv',
+                    updated_user);
+            } catch (e) {
+                updateScreen(
+                    user.roles.indexOf('root')>-1?
+                    'user':'serv',
+                    user);
             }
-        });
+        }
+
+    }
+
+    function onRemove(obj, type = null) {
+        var trans = {user:'usuário',serv:'serviço',farm:'fazenda'};
+        Alert.alert(
+            'Aviso',
+            `Quer mesmo apagar ${obj.name?'"'+obj.name+'"':'esse '+trans[type]}?`,
+            [
+                {
+                    text: 'Cancelar',
+                    onPress: () => null,
+                    style: 'cancel',
+                },
+                {text: 'Apagar', onPress: () => {
+                    api.delete(`/${type}/${obj.id}`).then(r=> {;
+                        updateScreen(type);
+                    });
+                }},
+            ]
+        );
     }
 
     useEffect(()=>{
@@ -94,8 +147,14 @@ export default function List({ navigation }) {
                         setUsers(r)
                     });
                 }}
-                onEdit={() => {}}
-                onRemove={() => {}}
+                onCreate={() => {
+                    navigation.navigate('User', {back:'List'});
+                }}
+                onEdit={(user) => {
+                    navigation.navigate('User', {user,
+                        back:'List'});
+                }}
+                onRemove={(user) => onRemove(user, 'user')}
             />
             ):(<Text style={styles.title} onPress={()=>{
                 updateScreen('user');
@@ -115,7 +174,7 @@ export default function List({ navigation }) {
                     });
                 }}
                 onEdit={() => {}}
-                onRemove={() => {}}
+                onRemove={(farm) => onRemove(farm, 'farm')}
             />
             ):(<Text style={styles.title} onPress={()=>{
                 updateScreen('farm');
@@ -135,7 +194,7 @@ export default function List({ navigation }) {
                     });
                 }}
                 onEdit={() => {}}
-                onRemove={() => {}}
+                onRemove={(serv) => onRemove(serv, 'serv')}
             />
             ):(<Text style={styles.title} onPress={()=>{
                 updateScreen('serv');

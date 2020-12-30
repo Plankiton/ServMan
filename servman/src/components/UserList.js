@@ -65,6 +65,7 @@ function UserList(props) {
 
 
         {props.users && props.users.length>0 ?(props.users.map(user => {
+            console.log('PRINTING, ', user);
             return user.roles.indexOf('root')<0?(
                 <View key={user.id} style={{
                     ...styles.box,
@@ -75,7 +76,7 @@ function UserList(props) {
                         justifyContent: 'flex-end',
                     }}>
                         <Button
-                            onPress={props.onEdit}
+                            onPress={() => props.onEdit(user)}
                             icon={({ size, color }) => (
                                 <Image
                                     source={require("../assets/pencil.png")}
@@ -85,7 +86,7 @@ function UserList(props) {
                                         tintColor: '#23B185',
                                     }}/>)}/>
                         <Button
-                            onPress={props.onRemove}
+                            onPress={() => props.onRemove(user)}
                             icon={({ size, color }) => (
                                 <Image
                                     source={require("../assets/trash.png")}
