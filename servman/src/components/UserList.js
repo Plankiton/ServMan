@@ -128,7 +128,25 @@ function UserList(props) {
                             )):null}
                     </View>
 
-                </View>):null;
+                </View>):(
+                    <View key={user.id} style={{
+                        ...styles.box,
+                        ...styles.border,
+                    }}>
+                        <Button icon={({ size, color }) => (
+                            <Image
+                                source={require("../assets/lock.png")}
+                                style={{
+                                    width: size,
+                                    height: size,
+                                    tintColor: '#23B185',
+                                }}/>)}>
+                            <Text style={{
+                                color: '#F55',
+                                fontSize: 16,
+                            }}>Root user</Text>
+                        </Button>
+                    </View>);
         } )) :(<Text style={{
             color: '#555',
             fontSize: 17,

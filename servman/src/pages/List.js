@@ -106,7 +106,7 @@ export default function List({ navigation }) {
         var trans = {user:'usuário',serv:'serviço',farm:'fazenda'};
         Alert.alert(
             'Aviso',
-            `Quer mesmo apagar ${obj.name?'"'+obj.name+'"':'esse '+trans[type]}?`,
+            `Quer mesmo apagar ${obj.name?'"'+obj.name+'"':'ess'+ (type=='farm'?'a':'e') +' '+trans[type]}?`,
             [
                 {
                     text: 'Cancelar',
@@ -114,8 +114,11 @@ export default function List({ navigation }) {
                     style: 'cancel',
                 },
                 {text: 'Apagar', onPress: () => {
+                    console.log("\n\n\n DELETING ", obj, "\n\n\n");
                     api.delete(`/${type}/${obj.id}`).then(r=> {;
                         updateScreen(type);
+                    }).catch(()=>{
+                        Alert.alert('Não foi possível apagar '+ obj.name?'"'+obj.name+'"':'ess'+ (type=='farm'?'a':'e') +' '+trans[type]);
                     });
                 }},
             ]

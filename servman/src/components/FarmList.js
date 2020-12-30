@@ -76,7 +76,7 @@ function FarmList(props) {
                         justifyContent: 'flex-end',
                     }}>
                         <Button
-                            onPress={props.onEdit}
+                            onPress={() => props.onEdit(farm)}
                             icon={({ size, color }) => (
                                 <Image
                                     source={require("../assets/pencil.png")}
@@ -86,7 +86,7 @@ function FarmList(props) {
                                         tintColor: '#23B185',
                                     }}/>)}/>
                         <Button
-                            onPress={props.onRemove}
+                            onPress={() => props.onRemove(farm)}
                             icon={({ size, color }) => (
                                 <Image
                                     source={require("../assets/trash.png")}

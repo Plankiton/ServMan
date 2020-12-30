@@ -81,7 +81,7 @@ function ServList (props) {
                         justifyContent: 'flex-end',
                     }}>
                         <Button
-                            onPress={props.onEdit}
+                            onPress={() => props.onEdit(serv)}
                             icon={({ size, color }) => (
                                 <Image
                                     source={require("../assets/pencil.png")}
@@ -91,7 +91,7 @@ function ServList (props) {
                                         tintColor: '#23B185',
                                     }}/>)}/>
                         <Button
-                            onPress={props.onRemove}
+                            onPress={() => props.onRemove(serv)}
                             icon={({ size, color }) => (
                                 <Image
                                     source={require("../assets/trash.png")}
