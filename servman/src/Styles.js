@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 30,
         marginTop: 30,
         marginBottom: 30,
+        maxHeight: "70%",
    },
    label: {
        fontWeight: 'bold',

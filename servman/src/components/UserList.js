@@ -144,7 +144,7 @@ function UserList(props) {
                             <Text style={{
                                 color: '#F55',
                                 fontSize: 16,
-                            }}>Root user</Text>
+                            }}>{user.name} (admin)</Text>
                         </Button>
                     </View>);
         } )) :(<Text style={{

@@ -86,7 +86,7 @@ export default function User({navigation}) {
             <View style={styles.centerBox}>
                 <Image source={logo}/>
 
-                <View style={styles.form}>
+                <ScrollView style={styles.form}>
 
                     <Text style={styles.label}>Nome Completo</Text>
                     <TextInput
@@ -133,12 +133,15 @@ export default function User({navigation}) {
                         onChangeText={setPass}
                     >{pass}</TextInput></>):null}
 
+                </ScrollView>
+
+                <View style={styles.form}>
                     <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-                        <Text style={styles.buttonText}>{user?'Salvar':'Criar usuário'}</Text>
+                        <Text style={styles.buttonText}>{farm?'Salvar':'Criar usuário'}</Text>
                     </TouchableOpacity>
                 </View>
-
             </View>
+
         </KeyboardAvoidingView>
     )
 }
