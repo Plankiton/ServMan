@@ -282,7 +282,7 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
     json.NewDecoder(r.Body).Decode(&body)
 
     serv := Serv{}
-    res := database.Where("id = ?", params["id"]).First(&serv, params["id"])
+    res := database.Where("id = ?", params["id"]).First(&serv)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
@@ -326,7 +326,7 @@ func DeleteServ(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
     serv := Serv{}
-    res := database.Where("id = ?", params["id"]).First(&serv, params["id"])
+    res := database.Where("id = ?", params["id"]).First(&serv)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 

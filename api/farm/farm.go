@@ -353,7 +353,7 @@ func DeleteFarm(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
     farm := Farm{}
-    res := database.First(&farm, params["id"])
+    res := database.Where("id = ?", params["id"]).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
