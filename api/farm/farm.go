@@ -20,7 +20,7 @@ type Addr struct {
     Number       string `json:"number,omitempty"`
     Code         string `json:"cep,omitempty"`
     City         string `json:"city,omitempty"`
-    Neightbourn  string `json:"neightborhood,omitempty"`
+    Neightbourn  string `json:"neighborhood,omitempty"`
 }
 
 type Farm struct {
@@ -149,6 +149,32 @@ func GetFarm(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateFarm cria um novo contato
+func GetAddrFromCep(w http.ResponseWriter, r *http.Request) {
+    params := mux.Vars(r)
+
+    address := Addr{}
+    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", params["cep"]))
+
+    if err != nil || r_addr.StatusCode != 200 {
+        w.WriteHeader(404)
+
+        json.NewEncoder(w).Encode(util.Response{
+            Message: "The address not found!",
+            Code: "NotFound",
+            Type: "error",
+        })
+
+        return
+    }
+
+    json.NewDecoder(r_addr.Body).Decode(&address)
+    json.NewEncoder(w).Encode(util.Response {
+        Type:    "sucess",
+        Code:    "GetAddressFromCep",
+        Data:    address,
+    })
+}
+
 func CreateFarm(w http.ResponseWriter, r *http.Request) {
     params := mux.Vars(r)
 
@@ -280,7 +306,7 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
 
     farm, address := Farm{}, Addr{}
 
-    res := database.First(&farm, params["id"])
+    res := database.Where("id = ?", params["id"]).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         w.WriteHeader(404)
 
@@ -292,7 +318,7 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
 
         return
     }
-    res = database.First(&address, farm.AddressId)
+    res = database.Where("id = ?", farm.AddressId).First(&address)
 
     for i, prop := range(body.Data) {
         switch i {
@@ -309,7 +335,7 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
             address.Street = prop
         case "number":
             address.Number = prop
-        case "neighborhood":
+        case "neighbornhood":
             address.Neightbourn = prop
         case "state":
             address.State = prop
@@ -318,16 +344,19 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
         }
     }
 
-    address.ID = util.ToHash(address.Code+address.Street+address.Number)
     {
-        addr := Addr{}
-        res := database.Where("id = ?", address.ID).First(&addr)
-        if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            address = addr
-        } else {
-            database.Create(&address)
-            database.Commit()
-        }
+        address.ID = util.ToHash(
+            address.Code+
+            address.State+
+            address.City+
+            address.Street+
+            address.Neightbourn+
+            address.Number)
+
+        fmt.Printf("%v\n", address);
+        database.Delete(&address)
+        database.Create(&address)
+        database.Commit()
     }
 
     farm.UpdateTime = time.Now()

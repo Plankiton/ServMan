@@ -38,6 +38,7 @@ func HttpAPI(router *mux.Router, db *gorm.DB) {
     router.HandleFunc("/farm/{id}", farm.DeleteFarm).Methods("DELETE")
     router.HandleFunc("/farm/{id}", farm.UpdateFarm).Methods("POST")
     router.HandleFunc("/farm/{id}/addr", farm.GetAddr).Methods("GET")
+    router.HandleFunc("/addr/{cep}", farm.GetAddrFromCep).Methods("GET")
     log.Output(2, "Routing Farm operations")
 
     // Serv
