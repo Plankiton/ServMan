@@ -1,6 +1,6 @@
 import axios from "axios";
 const api = axios.create({
-    baseURL: 'http://10.0.0.12:8000',
+    baseURL: 'http://192.168.2.38:8000',
 })
 
 async function updateFarms(user = null) {
@@ -13,12 +13,27 @@ async function updateFarms(user = null) {
     }
 
     if (user && user.roles.indexOf('root') > -1) {
-        console.log(`/farm`);
-        r = await api.get(`/farm`);
+        console.log('/farm');
+        r = await api.get('/farm');
     }
 
     if (r) {
         new_farms = [...new Set(r.data.data)]
+        for (var i in new_farms) {
+            try {
+                r = await api.get(`/farm/${new_farms[i].id}/addr`);
+                new_farms[i].addr = r.data.data;
+            } catch (e) {
+                new_farms[i].addr = null;
+            }
+
+            try {
+                r = await api.get(`/user/${new_farms[i].person}`);
+                new_farms[i].owner = r.data.data;
+            } catch (e) {
+                new_farms[i].owner = null;
+            }
+        }
         if (new_farms.length > 0)
             return new_farms;
     }
@@ -42,6 +57,24 @@ async function updateServs(user = null) {
 
     if (r) {
         new_servs = [...new Set(r.data.data)]
+
+        console.log(new_servs);
+        for (var i in new_servs) {
+            try {
+                r = await api.get(`/farm/${new_servs[i].farm}`);
+                new_servs[i].farm = r.data.data;
+            } catch (e) {
+                new_servs[i].farm = null;
+            }
+
+            try {
+                r = await api.get(`/user/${new_servs[i].person}`);
+                new_servs[i].pers = r.data.data;
+            } catch (e) {
+                new_servs[i].farm = null;
+            }
+        }
+
         if (new_servs.length > 0)
             return new_servs;
     }
