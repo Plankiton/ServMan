@@ -176,7 +176,10 @@ export default function List({ navigation }) {
                         setFarms(r)
                     });
                 }}
-                onEdit={() => {}}
+                onEdit={(farm) => {
+                    navigation.navigate('Farm', {farm,
+                        back:'List'});
+                }}
                 onRemove={(farm) => onRemove(farm, 'farm')}
             />
             ):(<Text style={styles.title} onPress={()=>{
