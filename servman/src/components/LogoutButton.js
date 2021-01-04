@@ -26,14 +26,12 @@ export default function LogoutButton(props) {
             });
             console.log(r.data);
 
-            await AsyncStorage.clear();
-
-            props.navigation.navigate('Login');
-
         } catch (e) {
-            console.log(e);
-            Alert.alert(`Não foi possível deslogar!`);
+            console.log('Usuário não existe!');
         }
+
+        await AsyncStorage.clear();
+        props.navigation.navigate('Login');
     }
 
     return (<TouchableOpacity
