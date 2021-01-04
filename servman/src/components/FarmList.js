@@ -109,7 +109,7 @@ function FarmList(props) {
                             color: '#555',
                             fontSize: 16,
                         }}>
-                            Rua {farm.addr.street}, {farm.addr.number}, {farm.addr.city} - {farm.addr.state}
+                            {farm.addr.street}, {farm.addr.number}, {farm.addr.neighborhood}, {farm.addr.city} - {farm.addr.state}
                         </Text>
                     ):null}
 

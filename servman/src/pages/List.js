@@ -176,6 +176,9 @@ export default function List({ navigation }) {
                         setFarms(r)
                     });
                 }}
+                onCreate={() => {
+                    navigation.navigate('FarmPrepar', {back:'List'});
+                }}
                 onEdit={(farm) => {
                     navigation.navigate('Farm', {farm,
                         back:'List'});

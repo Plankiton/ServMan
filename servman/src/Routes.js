@@ -5,6 +5,7 @@ import List from './pages/List';
 
 import User from './pages/User';
 import Farm from './pages/Farm';
+import FarmPrepar from './pages/FarmPrepar';
 // import Serv from './pages/Serv';
 
 const Routes = createAppContainer(
@@ -12,6 +13,7 @@ const Routes = createAppContainer(
         Login,
         List,
         User,
+        FarmPrepar,
         Farm,
     })
 );

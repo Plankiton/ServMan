@@ -82,11 +82,11 @@ async function updateServs(user = null) {
     return null;
 }
 
-async function updateUsers(user = null) {
+async function updateUsers(user = null, force = false) {
     var new_users = [];
 
     var r = null;
-    if (user && user.roles.indexOf('root') > -1) {
+    if (force||(user && user.roles.indexOf('root') > -1)) {
         console.log('/user/');
         r = await api.get('/user');
     }
