@@ -4,6 +4,7 @@ import { View,
     KeyboardAvoidingView,
     BackHandler,
     Alert,
+    ScrollView,
     Image,
     Text,
     TextInput,
@@ -137,7 +138,7 @@ export default function User({navigation}) {
 
                 <View style={styles.form}>
                     <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-                        <Text style={styles.buttonText}>{farm?'Salvar':'Criar usuário'}</Text>
+                        <Text style={styles.buttonText}>{user?'Salvar':'Criar usuário'}</Text>
                     </TouchableOpacity>
                 </View>
             </View>

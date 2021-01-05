@@ -16,7 +16,8 @@ import styles from '../Styles';
 
 import UserSelList from '../components/UserSelList';
 import api, {updateUsers} from '../services/api'
-export default function User({navigation}) {
+
+export default function SelUser({navigation}) {
     const [users,  setUsers] = useState([]);
     const [user,  setUser] = useState(null);
 
@@ -51,11 +52,6 @@ export default function User({navigation}) {
         });
     },[]);
 
-    async function handleSubmit() {
-        navigation.navigate('Farm', {user,
-            back:'FarmPrepar'});
-    }
-
     return (<SafeAreaView style={styles.container}>
 
         <Image style={{marginTop: 30}} source={logo}/>
@@ -69,12 +65,11 @@ export default function User({navigation}) {
                     setUsers(r)
                 });
             }}
-            onSelect={setUser}
+            onSelect={(user) => {
+                setUser(user);
+                navigation.navigate(navigation.getParam('dest'),
+                    {user, back:'SelUser'});
+            }}
         />
-        <View style={styles.form}>
-            <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-                <Text style={styles.buttonText}>Próximo</Text>
-            </TouchableOpacity>
-        </View>
     </SafeAreaView>);
 }

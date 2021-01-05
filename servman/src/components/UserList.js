@@ -66,7 +66,7 @@ function UserList(props) {
 
         {props.users && props.users.length>0 ?(props.users.map(user => {
             console.log('PRINTING, ', user);
-            return user.roles.indexOf('root')<0?(
+            return user.roles.indexOf('root')<0 || props.curr.roles.indexOf('root')>=0?(
                 <View key={user.id} style={{
                     ...styles.box,
                     ...styles.border,
@@ -118,7 +118,7 @@ function UserList(props) {
                         {user.roles?(
                             user.roles.map(
                                 role => (
-                                    <Text style={{
+                                    <Text key={role} style={{
                                         color: '#F55',
                                         fontSize: 16,
                                     }}>

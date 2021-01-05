@@ -10,6 +10,7 @@ import styles from '../Styles'
 
 export default function UserSelList(props) {
     const [selected, setSel] = useState(null);
+    console.log('ALL USERS, ', props.users);
     return (<View style={styles.container}>
 
         <View style={{
@@ -79,7 +80,7 @@ export default function UserSelList(props) {
                                     {user.roles?(
                                         user.roles.map(
                                             role => (
-                                                <Text style={{
+                                                <Text key={role} style={{
                                                     color: '#F55',
                                                     fontSize: 16,
                                                 }}>

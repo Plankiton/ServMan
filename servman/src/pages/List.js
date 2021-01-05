@@ -144,6 +144,7 @@ export default function List({ navigation }) {
             {active == 'user'?(
             <UserList
                 users={users}
+                curr={curr}
                 onRefresh={() => {
                     updateUsers(curr).then(r => {
                         console.log('UPDATING USERS ', r);
@@ -177,7 +178,7 @@ export default function List({ navigation }) {
                     });
                 }}
                 onCreate={() => {
-                    navigation.navigate('FarmPrepar', {back:'List'});
+                    navigation.navigate('SelUser', {back:'List', dest:'Farm'});
                 }}
                 onEdit={(farm) => {
                     navigation.navigate('Farm', {farm,
