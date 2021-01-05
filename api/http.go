@@ -45,7 +45,7 @@ func HttpAPI(router *mux.Router, db *gorm.DB) {
     serv.PopulateDB(db)
     router.HandleFunc("/serv",      serv.GetAllServs).Methods("GET")
     router.HandleFunc("/user/{id}/serv",      serv.GetServs).Methods("GET")
-    router.HandleFunc("/user/farm/{id}/serv", serv.GetServs).Methods("GET")
+    router.HandleFunc("/farm/{id}/serv", serv.GetServs).Methods("GET")
 
     router.HandleFunc("/user/{id}/serv",      serv.CreateServ).Methods("POST")
     router.HandleFunc("/user/farm/{id}/serv", serv.CreateServ).Methods("POST")
