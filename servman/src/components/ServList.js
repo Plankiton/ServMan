@@ -122,10 +122,10 @@ function ServList (props) {
                         }</Text>):null}
 
 
-                    <Text style={{
+                    {serv.price?(<Text style={{
                         color: '#555',
                         fontSize: 16,
-                    }}>Preço: {(serv.price*hours).toFixed(2).replace('.',',')} R$</Text>
+                    }}>Preço ({serv.price.toFixed(2).replace('.',',')}/hora): {(serv.price*hours).toFixed(2).replace('.',',')} R$</Text>):null}
 
 
 

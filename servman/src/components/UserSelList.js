@@ -37,7 +37,7 @@ export default function UserSelList(props) {
                 <Text style={{
                     ...styles.title,
                     fontSize: 16
-                }}>Selecione o dono da fazenda:</Text>
+                }}>Selecione o {props.title}:</Text>
             </Button>
         </View>
 

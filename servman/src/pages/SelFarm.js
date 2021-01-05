@@ -14,12 +14,12 @@ import logo from '../assets/logo.png';
 import { Platform } from '@unimodules/core';
 import styles from '../Styles';
 
-import UserSelList from '../components/UserSelList';
-import api, {updateUsers} from '../services/api'
+import FarmSelList from '../components/FarmSelList';
+import api, {updateFarms} from '../services/api'
 
-export default function SelUser({navigation}) {
-    const [users,  setUsers] = useState([]);
-    const [user,  setUser] = useState(null);
+export default function SelFarm({navigation}) {
+    const [farms,  setFarms] = useState([]);
+    const [farm,  setFarm] = useState(null);
 
     const [token, setToke] = useState('');
 
@@ -47,10 +47,9 @@ export default function SelUser({navigation}) {
                 curr = JSON.parse(curr);
                 setToke(curr.token);
 
-                setUser(curr);
-                updateUsers(curr, true).then(r => {
+                updateFarms(curr).then(r => {
                     console.log('UPDATING USERS ', r);
-                    setUsers(r);
+                    setFarms(r);
                 });
             }
         });
@@ -60,23 +59,21 @@ export default function SelUser({navigation}) {
 
         <Image style={{marginTop: 30}} source={logo}/>
 
-        <UserSelList
-            title={navigation.getParam('title')}
-            users={users}
-            curr={user}
+        <FarmSelList
+            farms={farms}
+            curr={farm}
             onRefresh={() => {
-                updateUsers(user).then(r => {
+                updateFarms(farm).then(r => {
                     console.log('UPDATING USERS ', r);
-                    setUsers(r)
+                    setFarms(r)
                 });
             }}
-            onSelect={(user) => {
-                setUser(user);
-                const farm = navigation.getParam('farm');
+            onSelect={(farm) => {
+                setFarm(farm);
+
+                const user = navigation.getParam('user');
                 navigation.navigate(navigation.getParam('dest'),
-                    {user, farm, back:'List',
-                        dest: navigation.getParam('next'),
-                    });
+                    {farm, user, back:'List'});
             }}
         />
     </SafeAreaView>);

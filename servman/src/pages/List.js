@@ -178,7 +178,9 @@ export default function List({ navigation }) {
                     });
                 }}
                 onCreate={() => {
-                    navigation.navigate('SelUser', {back:'List', dest:'Farm'});
+                    navigation.navigate('SelUser', {
+                        title: 'dono da fazenda',
+                        back:'List', dest:'Farm'});
                 }}
                 onEdit={(farm) => {
                     navigation.navigate('Farm', {farm,
@@ -202,8 +204,19 @@ export default function List({ navigation }) {
                         console.log('UPDATING SERVICES ', r);
                         setServs(r)
                     });
+               }}
+                onCreate={() => {
+                    navigation.navigate('SelUser',
+                        {
+                            title: 'funcionário',
+                            back: 'List',
+                            dest: 'SelFarm',
+                            next: 'Serv'});
                 }}
-                onEdit={() => {}}
+                onEdit={(serv) => {
+                    navigation.navigate('Serv', {serv,
+                        back:'List'});
+                }}
                 onRemove={(serv) => onRemove(serv, 'serv')}
             />
             ):(<Text style={styles.title} onPress={()=>{
