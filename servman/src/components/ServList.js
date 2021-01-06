@@ -91,6 +91,18 @@ function ServList (props) {
                                         tintColor: '#23B185',
                                     }}/>)}/>
                         <Button
+                            onPress={() => {
+                                props.onDetail(serv);
+                            }}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/more.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
+                        <Button
                             onPress={() => props.onRemove(serv)}
                             icon={({ size, color }) => (
                                 <Image

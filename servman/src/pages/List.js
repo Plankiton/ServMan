@@ -11,17 +11,20 @@ import { SafeAreaView,
 import {Button} from 'react-native-paper';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 
+import Moment from 'moment';
 import api, { updateServs, updateFarms, updateUsers } from '../services/api';
 import ServList from '../components/ServList';
 import FarmList from '../components/FarmList';
 import UserList from '../components/UserList';
 import LogoutButton from '../components/LogoutButton';
+import Footer from '../components/Footer';
+import trans from '../Translate';
 
-import styles from '../Styles'
+import styles from '../Styles';
 
 export default function List({ navigation }) {
     const [curr, setCurr] = useState(null);
-    const [active, setActive] = useState('user');
+    const [active, setActive] = useState(false);
 
     const [users, setUsers] = useState([]);
     const [servs, setServs] = useState([]);
@@ -78,32 +81,33 @@ export default function List({ navigation }) {
             user = JSON.parse(user);
             setCurr(user);
 
-            try {
-                const r = await api.post(`/user/${user.id}`)
-                updated_user = {
-                    ...r.data.data,
-                    token: token,
+            if (!active) {
+                try {
+                    const r = await api.post(`/user/${user.id}`)
+                    updated_user = {
+                        ...r.data.data,
+                        token: token,
+                    }
+
+                    await AsyncStorage.setItem('curr_user',
+                        JSON.stringify(updated_user));
+
+                    updateScreen(
+                        user.roles.indexOf('root')>-1?
+                        'user':'serv',
+                        updated_user);
+                } catch (e) {
+                    updateScreen(
+                        user.roles.indexOf('root')>-1?
+                        'user':'serv',
+                        user);
                 }
-
-                await AsyncStorage.setItem('curr_user',
-                    JSON.stringify(updated_user));
-
-                updateScreen(
-                    user.roles.indexOf('root')>-1?
-                    'user':'serv',
-                    updated_user);
-            } catch (e) {
-                updateScreen(
-                    user.roles.indexOf('root')>-1?
-                    'user':'serv',
-                    user);
             }
         }
 
     }
 
     function onRemove(obj, type = null) {
-        var trans = {user:'usuário',serv:'serviço',farm:'fazenda'};
         Alert.alert(
             'Aviso',
             `Quer mesmo apagar ${obj.name?'"'+obj.name+'"':'ess'+ (type=='farm'?'a':'e') +' '+trans[type]}?`,
@@ -128,7 +132,7 @@ export default function List({ navigation }) {
     useEffect(()=>{
         updateCurrUser();
     },[]);
-    return (<SafeAreaView style={styles.container}>
+    return (<SafeAreaView style={{...styles.container, ...styles.root}}>
         <LogoutButton
             navigation={navigation}
             user={curr}/>
@@ -187,6 +191,45 @@ export default function List({ navigation }) {
                         back:'List'});
                 }}
                 onRemove={(farm) => onRemove(farm, 'farm')}
+                onDetail={(farm) => {
+                    var items = [{title: farm.name}]
+                    for (var i in farm) {
+                        if (['farm', 'person', 'address', 'id'].indexOf(i)>=0)continue;
+
+                        if (farm[i] && typeof farm[i] == 'object') {
+                            items.push({title: trans[i]});
+
+                            for (var c in farm[i]) {
+                                if (['farm', 'created_at', 'updated_at', 'person', 'address', 'id'].indexOf(c)>=0)continue;
+
+                                items.push({
+                                    parent: i,
+                                    key: c,
+                                    value: farm[i][c],
+                                });
+                            }
+
+                            items.push({
+                                parent: i,
+                                key: 'created_at',
+                                value: farm[i].created_at,
+                            });
+                            items.push({
+                                parent: i,
+                                key: 'updated_at',
+                                value: farm[i].updated_at,
+                            });
+
+                        } else {
+                            items.push({
+                                key: i,
+                                value: farm[i]
+                            });
+                        }
+                    }
+
+                    navigation.navigate('Detail', {items, back:'List'});
+                }}
             />
             ):(<Text style={styles.title} onPress={()=>{
                 updateScreen('farm');
@@ -218,12 +261,90 @@ export default function List({ navigation }) {
                         back:'List'});
                 }}
                 onRemove={(serv) => onRemove(serv, 'serv')}
+
+                onDetail={(serv) => {
+                    var items = [{title: serv.description}]
+                    for (var i in serv) {
+                        if (['farm',
+                            'employee',
+                            'started_at',
+                            'finished_at',
+                            'price',
+                            'person',
+                            'address',
+                            'id'].indexOf(i)>=0)continue;
+
+                        if (serv[i] && typeof serv[i] == 'object') {
+                            items.push({title: trans[i]});
+
+                            for (var c in serv[i]) {
+                                if (['serv',
+                                    'created_at',
+                                    'updated_at',
+                                    'person',
+                                    'address',
+                                    'id'].indexOf(c)>=0)continue;
+
+                                items.push({
+                                    parent: i,
+                                    key: c,
+                                    value: serv[i][c],
+                                });
+                            }
+                            items.push({
+                                parent: i,
+                                key: 'created_at',
+                                value: serv[i].created_at,
+                            });
+                            items.push({
+                                parent: i,
+                                key: 'updated_at',
+                                value: serv[i].updated_at,
+                            });
+                        } else {
+                            items.push({
+                                key: i,
+                                value: serv[i]
+                            });
+                        }
+
+                    }
+
+
+                    Moment.locale('pt-BR');
+                    var begin = Moment(serv.started_at);
+                    var end = Moment(serv.finished_at);
+                    var diff = Math.abs(
+                        end - begin
+                    );
+                    var hours = diff/1000/60/60; // converting milisec to hours
+
+                    if (serv.price) {
+                        items.push({
+                            key: 'price',
+                            value: `${(Number(serv.price)*hours).toFixed(2).replace('.',',')} (${serv.price.toFixed(2).replace('.',',')+'/hora'})`,
+                        });
+                    }
+
+                    if (diff > 0) {
+                        items.push({
+                            key: 'started_at',
+                            value: serv.started_at,
+                        });
+                        items.push({
+                            key: 'finished_at',
+                            value: serv.finished_at,
+                        });
+                    }
+
+                    navigation.navigate('Detail', {items, back:'List'});
+                }}
             />
             ):(<Text style={styles.title} onPress={()=>{
                 updateScreen('serv');
             }}>Serviços</Text>)}
 
         </View>
-
+        <Footer/>
     </SafeAreaView>)
 }

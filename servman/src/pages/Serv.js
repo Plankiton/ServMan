@@ -13,6 +13,7 @@ import { View,
 import logo from '../assets/logo.png';
 import { Platform } from '@unimodules/core';
 import styles from '../Styles';
+import BackButton from '../components/BackButton';
 
 import api from '../services/api'
 export default function Serv({navigation}) {

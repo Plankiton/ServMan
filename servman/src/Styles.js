@@ -6,6 +6,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    root: {
+        flex: 1,
+        justifyContent: 'space-between',
+    },
     logo: {
         height: 40,
         resizeMode: 'contain',

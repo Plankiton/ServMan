@@ -9,6 +9,7 @@ import Serv from './pages/Serv';
 
 import SelUser from './pages/SelUser';
 import SelFarm from './pages/SelFarm';
+import Detail from './pages/Detail';
 
 const Routes = createAppContainer(
     createSwitchNavigator({
@@ -21,6 +22,8 @@ const Routes = createAppContainer(
 
         SelUser,
         SelFarm,
+
+        Detail,
     })
 );
 
