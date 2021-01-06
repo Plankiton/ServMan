@@ -118,8 +118,8 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
             "document": p.DocValue,
             "phone": p.Phone,
             "roles": types,
-            "create_at": p.CreateTime,
-            "update_at": p.UpdateTime,
+            "created_at": p.CreateTime,
+            "updated_at": p.UpdateTime,
         })
     }
 
@@ -173,8 +173,8 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
             "document": person.DocValue,
             "phone": person.Phone,
             "roles": types,
-            "create_at": person.CreateTime,
-            "update_at": person.UpdateTime,
+            "created_at": person.CreateTime,
+            "updated_at": person.UpdateTime,
         },
     })
 }
@@ -346,8 +346,8 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
             "document": person.DocValue,
             "phone": person.Phone,
             "roles": types,
-            "create_at": person.CreateTime,
-            "update_at": person.UpdateTime,
+            "created_at": person.CreateTime,
+            "updated_at": person.UpdateTime,
         },
     })
 }
