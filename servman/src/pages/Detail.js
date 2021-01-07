@@ -36,6 +36,27 @@ export default function Detail({navigation}) {
         <BackButton
             navigation={navigation}
             back={navigation.getParam('back')}/>
+        <Button
+            onPress={navigation.getParam('onRefresh')}
+            style={{
+                flex: 0,
+                tintColor: '#23B185',
+                color: '#23B185',
+            }}
+            icon={({ size, color }) => (
+                <Image
+                    source={require("../assets/refresh.png")}
+                    style={{
+                        padding: 5,
+                        width: size,
+                        height: size,
+                        tintColor: '#23B185',
+                    }}/>
+            )}>
+            <Text style={styles.title}>{
+                navigation.getParam('title')
+            }</Text>
+        </Button>
         <ScrollView style={{margin: 15}}>
             <View style={styles.container}>
                 <View style={{
@@ -44,7 +65,13 @@ export default function Detail({navigation}) {
                 </View>
 
                 {items.map((i) => {
-                    if (i.key && i.value) {
+                    if (i.element) {
+                        return (<View key={`${i.parent?i.parent:''}${i.text}`} style={{
+                            ...styles.box,
+                        }}>
+                            {i.element}
+                        </View>);
+                    } else if (i.key && i.value) {
                         if (['created_at',
                             'updated_at',
                             'started_at',

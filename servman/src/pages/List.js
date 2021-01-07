@@ -86,7 +86,7 @@ export default function List({ navigation }) {
                     const r = await api.post(`/user/${user.id}`)
                     updated_user = {
                         ...r.data.data,
-                        token: token,
+                        token: user.token,
                     }
 
                     await AsyncStorage.setItem('curr_user',
@@ -322,74 +322,127 @@ export default function List({ navigation }) {
                     onRemove={(serv) => onRemove(serv, 'serv')}
 
                     onDetail={(serv) => {
-                        var items = [{title: serv.description}]
-                        var subitems = [];
-                        for (var i in serv) {
-                            if ([
-                                'person',
-                                'started_at',
-                                'finished_at',
-                                'price',
-                                'address',
-                                'id'].indexOf(i)>=0)continue;
-
-                            if (serv[i] && typeof serv[i] == 'object') {
-                                subitems.push({...serv[i], type: i})
-                            } else {
-                                items.push({
-                                    key: i,
-                                    value: serv[i]
-                                });
-                            }
-
-                        }
-
-                        Moment.locale('pt-BR');
-                        var begin = Moment(serv.started_at);
-                        var end = Moment(serv.finished_at);
-                        var diff = Math.abs(
-                            end - begin
-                        );
-                        var hours = diff/1000/60/60; // converting milisec to hours
-
-                        if (serv.price) {
-                            items.push({
-                                key: 'price',
-                                value: `${(Number(serv.price)*hours).toFixed(2).replace('.',',')} (${serv.price.toFixed(2).replace('.',',')+'/hora'})`,
-                            });
-                        }
-
-                        if (diff > 0) {
-                            items.push({
-                                key: 'started_at',
-                                value: serv.started_at,
-                            });
-                            items.push({
-                                key: 'finished_at',
-                                value: serv.finished_at,
-                            });
-                        }
-
-                        for (var i in subitems) {
-                            items.push({title: trans[subitems[i].type]});
-                            for (var c in subitems[i]) {
-                                if (['serv',
+                        function toItems(serv, token) {
+                            var items = [{title: serv.description}];
+                            var subitems = [];
+                            for (var i in serv) {
+                                if ([
                                     'person',
-                                    'created_at',
-                                    'updated_at',
+                                    'started_at',
+                                    'finished_at',
+                                    'stoped',
+                                    'price',
                                     'address',
-                                    'type',
-                                    'id'].indexOf(c)>=0)continue;
+                                    'id'].indexOf(i)>=0)continue;
+
+                                if (serv[i] && typeof serv[i] == 'object') {
+                                    subitems.push({...serv[i], type: i})
+                                } else {
+                                    items.push({
+                                        key: i,
+                                        value: serv[i]
+                                    });
+                                }
+
+                            }
+
+                            Moment.locale('pt-BR');
+                            var begin = Moment(serv.started_at);
+                            var end = Moment(serv.finished_at);
+                            var diff = 0
+                            if (serv.stoped) {
+                                diff = Math.abs(
+                                    end - begin
+                                );
+                            } else {
+                                diff = Math.abs(
+                                    (new Date()) - begin
+                                );
+
+                            }
+
+                            var hours = diff/1000/60/60; // converting milisec to hours
+
+                            if (hours>0) {
+                                var h = Math.trunc(hours)>0? `${Math.trunc(hours)} hora`+(
+                                    Math.trunc(hours)>1?'s':''
+                                ): ''
+                                var m = hours%1>0?((Math.trunc(hours)>0?'e':''
+                                )+ ` ${Math.trunc((hours%1*100))} minuto`+(
+                                    Math.trunc(hours%1*100)>1?'s':'') ):''
 
                                 items.push({
-                                    parent: i,
-                                    key: c,
-                                    value: subitems[i][c],
+                                    key: "Carga horária",
+                                    value: `${h} ${m}`,
                                 });
                             }
-                        }
 
-                        navigation.navigate('Detail', {items, back:'List'});
+                            if (serv.price) {
+                                items.push({
+                                    key: 'price',
+                                    value: `${(Number(serv.price)*hours).toFixed(2).replace('.',',')} (${serv.price.toFixed(2).replace('.',',')+'/hora'})`,
+                                });
+                            }
+
+                            if (diff > 0) {
+                                items.push({
+                                    key: 'started_at',
+                                    value: serv.started_at,
+                                });
+                                items.push({
+                                    key: 'finished_at',
+                                    value: serv.finished_at,
+                                });
+                            }
+
+                            for (var i in subitems) {
+                                items.push({title: trans[subitems[i].type]});
+                                for (var c in subitems[i]) {
+                                    if (['serv',
+                                        'person',
+                                        'created_at',
+                                        'updated_at',
+                                        'address',
+                                        'stoped',
+                                        'type',
+                                        'id'].indexOf(c)>=0)continue;
+
+                                    items.push({
+                                        parent: i,
+                                        key: c,
+                                        value: subitems[i][c],
+                                    });
+                                }
+                            }
+
+                            items.push({
+                                element: (!serv.stoped?<TouchableOpacity onPress={() => {
+                                    api.post(`/serv/${serv.id}/mark`, {token,data:{
+                                        type: diff?'end':'begin',
+                                    }}).then((r) => {
+                                        api.get(`/serv/${serv.id}`).then((r) => {
+                                            var items = toItems(r.data.data, token)
+                                            navigation.navigate('Detail', {items, back:'List'});
+                                        });
+                                    });
+                                }} style={styles.button}>
+                                    <Text style={styles.buttonText}>{diff?'Parar':'Iniciar'}</Text>
+                                </TouchableOpacity>:null),
+                            });
+                            return items;
+                        }
+                        var items = toItems(serv, curr.token);
+                        console.log('NÃO É AQUI!!')
+                        navigation.navigate('Detail', {
+                            items,
+                            title: `Serviço de ${serv.employee.name}`,
+                            back: 'List',
+                            onRefresh: () => {
+                                api.get(`/serv/${serv.id}`).then((r) => {
+                                    var items = toItems(r.data.data, curr.token)
+                                    navigation.navigate('Detail', {items, back:'List'});
+                                });
+                            }});
                     }}
                 />
             ):(<Text style={styles.title} onPress={()=>{

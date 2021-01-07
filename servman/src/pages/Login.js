@@ -79,7 +79,7 @@ export default function Login({navigation}) {
                     >
                     </TextInput>
                     <Text style={styles.label}>SENHA</Text>
-                    <TextInput 
+                    <TextInput
                         style={styles.input}
                         placeholder="Digite sua senha"
                         placeholderTextColor="#999"
