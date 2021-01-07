@@ -164,13 +164,14 @@ export default function List({ navigation }) {
                         }}
                         onRemove={(user) => onRemove(user, 'user')}
                         onDetail={(user) => {
-                            var items = [{title: user.description}]
+                            var items = [{title: user.name}]
                             var subitems = [];
                             for (var i in user) {
                                 if (['farm',
                                     'employee',
-                                    'started_at',
-                                    'finished_at',
+                                    'created_at',
+                                    'updated_at',
+                                    'roles',
                                     'price',
                                     'person',
                                     'address',
@@ -185,6 +186,20 @@ export default function List({ navigation }) {
                                     });
                                 }
 
+                            }
+
+                            items.push({
+                                key: 'created_at',
+                                value: user.created_at,
+                            });
+                            items.push({
+                                key: 'updated_at',
+                                value: user.updated_at,
+                            });
+
+                            for (var i in subitems) {
+                                console.log('!', i, subitems[i])
+                                if (subitems[i].length <= 1) continue;
 
                                 items.push({title: trans[subitems[i].type]});
                                 for (var c in subitems[i]) {
@@ -238,7 +253,7 @@ export default function List({ navigation }) {
                         var items = [{title: farm.name}]
                         var subitems = [];
                         for (var i in farm) {
-                            if (['farm', 'person', 'address', 'id'].indexOf(i)>=0)continue;
+                            if (['farm', 'created_at', 'type', 'updated_at', 'person', 'address', 'id'].indexOf(i)>=0)continue;
 
                             if (farm[i] && typeof farm[i] == 'object') {
                                 subitems.push({...farm[i], type: i})
@@ -249,6 +264,16 @@ export default function List({ navigation }) {
                                 });
                             }
                         }
+
+                        items.push({
+                            key: 'created_at',
+                            value: farm.created_at,
+                        });
+                        items.push({
+                            key: 'updated_at',
+                            value: farm.updated_at,
+                        });
+
 
                         for (var i in subitems) {
                             items.push({title: trans[subitems[i].type]});
@@ -262,7 +287,6 @@ export default function List({ navigation }) {
                                 });
                             }
                         }
-
                         navigation.navigate('Detail', {items, back:'List'});
                     }}
                 />
@@ -320,25 +344,6 @@ export default function List({ navigation }) {
 
                         }
 
-                        for (var i in subitems) {
-                            items.push({title: trans[subitems[i].type]});
-                            for (var c in subitems[i]) {
-                                if (['serv',
-                                    'person',
-                                    'created_at',
-                                    'updated_at',
-                                    'address',
-                                    'type',
-                                    'id'].indexOf(c)>=0)continue;
-
-                                items.push({
-                                    parent: i,
-                                    key: c,
-                                    value: serv[i][c],
-                                });
-                            }
-                        }
-
                         Moment.locale('pt-BR');
                         var begin = Moment(serv.started_at);
                         var end = Moment(serv.finished_at);
@@ -363,6 +368,25 @@ export default function List({ navigation }) {
                                 key: 'finished_at',
                                 value: serv.finished_at,
                             });
+                        }
+
+                        for (var i in subitems) {
+                            items.push({title: trans[subitems[i].type]});
+                            for (var c in subitems[i]) {
+                                if (['serv',
+                                    'person',
+                                    'created_at',
+                                    'updated_at',
+                                    'address',
+                                    'type',
+                                    'id'].indexOf(c)>=0)continue;
+
+                                items.push({
+                                    parent: i,
+                                    key: c,
+                                    value: subitems[i][c],
+                                });
+                            }
                         }
 
                         navigation.navigate('Detail', {items, back:'List'});
