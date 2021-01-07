@@ -27,6 +27,7 @@ type Serv struct {
 
     BeginTime   time.Time `json:"started_at,omitempty" gorm:"index"`
     EndTime     time.Time `json:"finished_at,omitempty" gorm:"index"`
+    Stoped      bool      `json:"stoped,omitempty"`
 }
 
 var database *gorm.DB
@@ -231,37 +232,27 @@ func MarkServTime(w http.ResponseWriter, r *http.Request) {
     }
 
     set := false
-    timestamp, err := strconv.ParseInt(body.Data["value"], 10, 64)
 
     if body.Data["value"] == "" {
         if body.Data["type"] == "begin" {
             serv.BeginTime = time.Now()
+            serv.Stoped = false
         } else {
             serv.EndTime = time.Now()
+            serv.Stoped = true
         }
 
         set = true
     }
 
     if !set {
-        if err != nil {
-            w.WriteHeader(400)
-
-            json.NewEncoder(w).Encode(util.Response{
-                Message: "The data sent is invalid!"+
-                `(must be {"data": "..."})`,
-                Code: "BadRequest",
-                Type: "error",
-                Data: nil,
-            })
-
-            return
-        }
-
+        layout := "2006-01-02T15:04:05.000Z"
         if body.Data["type"] == "begin" {
-            serv.BeginTime = time.Unix(timestamp, 0)
+            serv.BeginTime, _ = time.Parse(layout, body.Data["value"])
+            serv.Stoped = false
         } else {
-            serv.EndTime = time.Unix(timestamp, 0)
+            serv.EndTime, _ = time.Parse(layout, body.Data["value"])
+            serv.Stoped = true
         }
     }
 
