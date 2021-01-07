@@ -86,6 +86,18 @@ function UserList(props) {
                                         tintColor: '#23B185',
                                     }}/>)}/>
                         <Button
+                            onPress={() => {
+                                props.onDetail(user);
+                            }}
+                            icon={({ size, color }) => (
+                                <Image
+                                    source={require("../assets/more.png")}
+                                    style={{
+                                        width: size,
+                                        height: size,
+                                        tintColor: '#23B185',
+                                    }}/>)}/>
+                        <Button
                             onPress={() => props.onRemove(user)}
                             icon={({ size, color }) => (
                                 <Image

@@ -138,99 +138,134 @@ export default function List({ navigation }) {
             user={curr}/>
 
         <View style={{...styles.container, ...styles.center,
-                paddingVertical: 20,
-            }}>
+            paddingVertical: 20,
+        }}>
 
             {curr && curr.roles.indexOf('root')>-1?(<><View style={{...styles.line,
                 marginTop: 15,
                 marginBottom: 5,
             }}></View>
-            {active == 'user'?(
-            <UserList
-                users={users}
-                curr={curr}
-                onRefresh={() => {
-                    updateUsers(curr).then(r => {
-                        console.log('UPDATING USERS ', r);
-                        setUsers(r)
-                    });
-                }}
-                onCreate={() => {
-                    navigation.navigate('User', {back:'List'});
-                }}
-                onEdit={(user) => {
-                    navigation.navigate('User', {user,
-                        back:'List'});
-                }}
-                onRemove={(user) => onRemove(user, 'user')}
-            />
-            ):(<Text style={styles.title} onPress={()=>{
-                updateScreen('user');
-            }}>Usuários</Text>)}</>):null}
+                {active == 'user'?(
+                    <UserList
+                        users={users}
+                        curr={curr}
+                        onRefresh={() => {
+                            updateUsers(curr).then(r => {
+                                console.log('UPDATING USERS ', r);
+                                setUsers(r)
+                            });
+                        }}
+                        onCreate={() => {
+                            navigation.navigate('User', {back:'List'});
+                        }}
+                        onEdit={(user) => {
+                            navigation.navigate('User', {user,
+                                back:'List'});
+                        }}
+                        onRemove={(user) => onRemove(user, 'user')}
+                        onDetail={(user) => {
+                            var items = [{title: user.description}]
+                            var subitems = [];
+                            for (var i in user) {
+                                if (['farm',
+                                    'employee',
+                                    'started_at',
+                                    'finished_at',
+                                    'price',
+                                    'person',
+                                    'address',
+                                    'id'].indexOf(i)>=0)continue;
+
+                                if (user[i] && typeof user[i] == 'object') {
+                                    subitems.push({...user[i], type: i})
+                                } else {
+                                    items.push({
+                                        key: i,
+                                        value: user[i]
+                                    });
+                                }
+
+
+                                items.push({title: trans[subitems[i].type]});
+                                for (var c in subitems[i]) {
+                                    if (['user',
+                                        'created_at',
+                                        'updated_at',
+                                        'type',
+                                        'person',
+                                        'address',
+                                        'id'].indexOf(c)>=0)continue;
+
+                                    items.push({
+                                        parent: i,
+                                        key: c,
+                                        value: subitems[i][c],
+                                    });
+                                }
+                            }
+
+                            navigation.navigate('Detail', {items, back:'List'});
+                        }}
+                    />
+                ):(<Text style={styles.title} onPress={()=>{
+                    updateScreen('user');
+                }}>Usuários</Text>)}</>):null}
 
             <View style={{...styles.line,
                 marginTop: 15,
                 marginBottom: 5,
             }}></View>
             {active == 'farm'?(
-            <FarmList
-                farms={farms}
-                onRefresh={() => {
-                    updateFarms(curr).then(r => {
-                        console.log('UPDATING FARMS ', r);
-                        setFarms(r)
-                    });
-                }}
-                onCreate={() => {
-                    navigation.navigate('SelUser', {
-                        title: 'dono da fazenda',
-                        back:'List', dest:'Farm'});
-                }}
-                onEdit={(farm) => {
-                    navigation.navigate('Farm', {farm,
-                        back:'List'});
-                }}
-                onRemove={(farm) => onRemove(farm, 'farm')}
-                onDetail={(farm) => {
-                    var items = [{title: farm.name}]
-                    for (var i in farm) {
-                        if (['farm', 'person', 'address', 'id'].indexOf(i)>=0)continue;
+                <FarmList
+                    farms={farms}
+                    onRefresh={() => {
+                        updateFarms(curr).then(r => {
+                            console.log('UPDATING FARMS ', r);
+                            setFarms(r)
+                        });
+                    }}
+                    onCreate={() => {
+                        navigation.navigate('SelUser', {
+                            title: 'dono da fazenda',
+                            back:'List', dest:'Farm'});
+                    }}
+                    onEdit={(farm) => {
+                        navigation.navigate('Farm', {farm,
+                            back:'List'});
+                    }}
+                    onRemove={(farm) => onRemove(farm, 'farm')}
+                    onDetail={(farm) => {
+                        var items = [{title: farm.name}]
+                        var subitems = [];
+                        for (var i in farm) {
+                            if (['farm', 'person', 'address', 'id'].indexOf(i)>=0)continue;
 
-                        if (farm[i] && typeof farm[i] == 'object') {
-                            items.push({title: trans[i]});
+                            if (farm[i] && typeof farm[i] == 'object') {
+                                subitems.push({...farm[i], type: i})
+                            } else {
+                                items.push({
+                                    key: i,
+                                    value: farm[i]
+                                });
+                            }
+                        }
 
-                            for (var c in farm[i]) {
-                                if (['farm', 'created_at', 'updated_at', 'person', 'address', 'id'].indexOf(c)>=0)continue;
+                        for (var i in subitems) {
+                            items.push({title: trans[subitems[i].type]});
+                            for (var c in subitems[i]) {
+                                if (['farm', 'created_at', 'type', 'updated_at', 'person', 'address', 'id'].indexOf(c)>=0)continue;
 
                                 items.push({
                                     parent: i,
                                     key: c,
-                                    value: farm[i][c],
+                                    value: subitems[i][c],
                                 });
                             }
-
-                            items.push({
-                                parent: i,
-                                key: 'created_at',
-                                value: farm[i].created_at,
-                            });
-                            items.push({
-                                parent: i,
-                                key: 'updated_at',
-                                value: farm[i].updated_at,
-                            });
-
-                        } else {
-                            items.push({
-                                key: i,
-                                value: farm[i]
-                            });
                         }
-                    }
 
-                    navigation.navigate('Detail', {items, back:'List'});
-                }}
-            />
+                        navigation.navigate('Detail', {items, back:'List'});
+                    }}
+                />
             ):(<Text style={styles.title} onPress={()=>{
                 updateScreen('farm');
             }}>Fazendas</Text>)}
@@ -240,49 +275,60 @@ export default function List({ navigation }) {
                 marginBottom: 5,
             }}></View>
             {active == 'serv'?(
-            <ServList
-                servs={servs}
-                onRefresh={() => {
-                    updateServs(curr).then(r => {
-                        console.log('UPDATING SERVICES ', r);
-                        setServs(r)
-                    });
-               }}
-                onCreate={() => {
-                    navigation.navigate('SelUser',
-                        {
-                            title: 'funcionário',
-                            back: 'List',
-                            dest: 'SelFarm',
-                            next: 'Serv'});
-                }}
-                onEdit={(serv) => {
-                    navigation.navigate('Serv', {serv,
-                        back:'List'});
-                }}
-                onRemove={(serv) => onRemove(serv, 'serv')}
+                <ServList
+                    servs={servs}
+                    onRefresh={() => {
+                        updateServs(curr).then(r => {
+                            console.log('UPDATING SERVICES ', r);
+                            setServs(r)
+                        });
+                    }}
+                    onCreate={() => {
+                        navigation.navigate('SelUser',
+                            {
+                                title: 'funcionário',
+                                back: 'List',
+                                dest: 'SelFarm',
+                                next: 'Serv'});
+                    }}
+                    onEdit={(serv) => {
+                        navigation.navigate('Serv', {serv,
+                            back:'List'});
+                    }}
+                    onRemove={(serv) => onRemove(serv, 'serv')}
 
-                onDetail={(serv) => {
-                    var items = [{title: serv.description}]
-                    for (var i in serv) {
-                        if (['farm',
-                            'employee',
-                            'started_at',
-                            'finished_at',
-                            'price',
-                            'person',
-                            'address',
-                            'id'].indexOf(i)>=0)continue;
+                    onDetail={(serv) => {
+                        var items = [{title: serv.description}]
+                        var subitems = [];
+                        for (var i in serv) {
+                            if ([
+                                'person',
+                                'started_at',
+                                'finished_at',
+                                'price',
+                                'address',
+                                'id'].indexOf(i)>=0)continue;
 
-                        if (serv[i] && typeof serv[i] == 'object') {
-                            items.push({title: trans[i]});
+                            if (serv[i] && typeof serv[i] == 'object') {
+                                subitems.push({...serv[i], type: i})
+                            } else {
+                                items.push({
+                                    key: i,
+                                    value: serv[i]
+                                });
+                            }
 
-                            for (var c in serv[i]) {
+                        }
+
+                        for (var i in subitems) {
+                            items.push({title: trans[subitems[i].type]});
+                            for (var c in subitems[i]) {
                                 if (['serv',
+                                    'person',
                                     'created_at',
                                     'updated_at',
-                                    'person',
                                     'address',
+                                    'type',
                                     'id'].indexOf(c)>=0)continue;
 
                                 items.push({
@@ -291,55 +337,37 @@ export default function List({ navigation }) {
                                     value: serv[i][c],
                                 });
                             }
+                        }
+
+                        Moment.locale('pt-BR');
+                        var begin = Moment(serv.started_at);
+                        var end = Moment(serv.finished_at);
+                        var diff = Math.abs(
+                            end - begin
+                        );
+                        var hours = diff/1000/60/60; // converting milisec to hours
+
+                        if (serv.price) {
                             items.push({
-                                parent: i,
-                                key: 'created_at',
-                                value: serv[i].created_at,
-                            });
-                            items.push({
-                                parent: i,
-                                key: 'updated_at',
-                                value: serv[i].updated_at,
-                            });
-                        } else {
-                            items.push({
-                                key: i,
-                                value: serv[i]
+                                key: 'price',
+                                value: `${(Number(serv.price)*hours).toFixed(2).replace('.',',')} (${serv.price.toFixed(2).replace('.',',')+'/hora'})`,
                             });
                         }
 
-                    }
+                        if (diff > 0) {
+                            items.push({
+                                key: 'started_at',
+                                value: serv.started_at,
+                            });
+                            items.push({
+                                key: 'finished_at',
+                                value: serv.finished_at,
+                            });
+                        }
 
-
-                    Moment.locale('pt-BR');
-                    var begin = Moment(serv.started_at);
-                    var end = Moment(serv.finished_at);
-                    var diff = Math.abs(
-                        end - begin
-                    );
-                    var hours = diff/1000/60/60; // converting milisec to hours
-
-                    if (serv.price) {
-                        items.push({
-                            key: 'price',
-                            value: `${(Number(serv.price)*hours).toFixed(2).replace('.',',')} (${serv.price.toFixed(2).replace('.',',')+'/hora'})`,
-                        });
-                    }
-
-                    if (diff > 0) {
-                        items.push({
-                            key: 'started_at',
-                            value: serv.started_at,
-                        });
-                        items.push({
-                            key: 'finished_at',
-                            value: serv.finished_at,
-                        });
-                    }
-
-                    navigation.navigate('Detail', {items, back:'List'});
-                }}
-            />
+                        navigation.navigate('Detail', {items, back:'List'});
+                    }}
+                />
             ):(<Text style={styles.title} onPress={()=>{
                 updateScreen('serv');
             }}>Serviços</Text>)}

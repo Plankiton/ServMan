@@ -68,10 +68,10 @@ async function updateServs(user = null) {
             }
 
             try {
-                r = await api.get(`/user/${new_servs[i].person}`);
-                new_servs[i].pers = r.data.data;
+                r = await api.get(`/user/${new_servs[i].employee}`);
+                new_servs[i].employee = r.data.data;
             } catch (e) {
-                new_servs[i].farm = null;
+                new_servs[i].employee = null;
             }
         }
 

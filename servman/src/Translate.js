@@ -26,4 +26,5 @@ export default {
     SelUser: 'seleção de usuário',
     SelFarm: 'seleção de fazenda',
     price: 'Preço',
+    employee: 'Funcionário',
 };
