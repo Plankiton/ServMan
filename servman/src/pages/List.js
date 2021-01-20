@@ -1,73 +1,455 @@
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, Text, ScrollView, AsyncStorage, StyleSheet,  Image, Alert } from 'react-native';
-import socketio from 'socket.io-client';
-
-import SpotList from '../components/SpotList';
-
-
-import logo from '../assets/logo.png';
+import { SafeAreaView,
+    Text,
+    View,
+    AsyncStorage,
+    StyleSheet,
+    BackHandler,
+    ScrollView,
+    Image,
+    Alert } from 'react-native';
+import {Button} from 'react-native-paper';
 import { TouchableOpacity } from 'react-native-gesture-handler';
 
+import Moment from 'moment';
+import api, { updateServs, updateFarms, updateUsers } from '../services/api';
+import ServList from '../components/ServList';
+import FarmList from '../components/FarmList';
+import UserList from '../components/UserList';
+import LogoutButton from '../components/LogoutButton';
+import Footer from '../components/Footer';
+import trans from '../Translate';
+
+import styles from '../Styles';
+
 export default function List({ navigation }) {
-    const [techs, setTechs] = useState([]);
+    const [curr, setCurr] = useState(null);
+    const [active, setActive] = useState(false);
 
-    /*
-    useEffect(()=>{
-        AsyncStorage.getItem('techs').then(storagedTechs=>{
-            const techsArray = storagedTechs.split(',').map(tech=> tech.trim());
-            noDuplicatedArray =[...new Set(techsArray)]
-            setTechs(noDuplicatedArray);
-        })
-    },[])
-    */
+    const [users, setUsers] = useState([]);
+    const [servs, setServs] = useState([]);
+    const [farms, setFarms] = useState([]);
 
-    /*
-    useEffect(()=>{
-        AsyncStorage.getItem('user').then(user_id=>{
-            const socket = socketio('http://192.168.25.126:3333',{
-                query:{ user_id }
-            })
-            socket.on('booking_response', booking =>{
-                Alert.alert(`Sua reserva em ${booking.spot.company} em ${booking.date} foi ${booking.approved? 'APROVADA':'REJEITADA'} `)
-            })
-        })
-
-    },[]);
-    */
-
-    function logout() {
-        AsyncStorage.clear();
-        navigation.navigate('Login');
+    function handleBackButtonClick() {
+        console.log("backing...");
+        return true;
     }
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <TouchableOpacity style={styles.center}  onPress={()=>logout()}>
-                <Image style={styles.logo} source={logo}/>
-                <Text style={{
-                    color: '#23B185',
-                    fontWeight:'bold',
-                    fontSize:16,
-                }}>Sair</Text>
-            </TouchableOpacity>
-            <ScrollView>
-                {techs.map(tech=>(<SpotList key={tech} tech={tech}></SpotList>))}
-            </ScrollView>
-        </SafeAreaView>
-    )
+    useEffect(() => {
+        BackHandler.addEventListener('hardwareBackPress', handleBackButtonClick);
+        return () => {
+            BackHandler.removeEventListener('hardwareBackPress', handleBackButtonClick);
+        };
+    }, []);
+
+    async function updateScreen(screen, user = null) {
+        setActive(screen);
+
+        if (screen == 'serv') {
+            setFarms([]);
+            setUsers([]);
+            updateServs(curr?curr:user).then(r => {
+                console.log('UPDATING SERVICES ', r);
+                setServs(r)
+            });
+        }
+
+        else if (screen == 'farm') {
+            setServs([]);
+            setUsers([]);
+            updateFarms(curr?curr:user).then(r => {
+                console.log('UPDATING FARMS ', r);
+                setFarms(r)
+            });
+        }
+
+        else if (screen == 'user') {
+            setFarms([]);
+            setServs([]);
+            updateUsers(curr?curr:user).then(r => {
+                console.log('UPDATING USERS ', r);
+                setUsers(r);
+            });
+        }
+    }
+
+    async function updateCurrUser() {
+
+        var user = await AsyncStorage.getItem('curr_user');
+
+        if (user) {
+            user = JSON.parse(user);
+            setCurr(user);
+
+            if (!active) {
+                try {
+                    const r = await api.post(`/user/${user.id}`)
+                    updated_user = {
+                        ...r.data.data,
+                        token: user.token,
+                    }
+
+                    await AsyncStorage.setItem('curr_user',
+                        JSON.stringify(updated_user));
+
+                    updateScreen(
+                        user.roles.indexOf('root')>-1?
+                        'user':'serv',
+                        updated_user);
+                } catch (e) {
+                    updateScreen(
+                        user.roles.indexOf('root')>-1?
+                        'user':'serv',
+                        user);
+                }
+            }
+        }
+
+    }
+
+    function onRemove(obj, type = null) {
+        Alert.alert(
+            'Aviso',
+            `Quer mesmo apagar ${obj.name?'"'+obj.name+'"':'ess'+ (type=='farm'?'a':'e') +' '+trans[type]}?`,
+            [
+                {
+                    text: 'Cancelar',
+                    onPress: () => null,
+                    style: 'cancel',
+                },
+                {text: 'Apagar', onPress: () => {
+                    console.log("\n\n\n DELETING ", obj, "\n\n\n");
+                    api.delete(`/${type}/${obj.id}`).then(r=> {;
+                        updateScreen(type);
+                    }).catch(()=>{
+                        Alert.alert('Não foi possível apagar '+ obj.name?'"'+obj.name+'"':'ess'+ (type=='farm'?'a':'e') +' '+trans[type]);
+                    });
+                }},
+            ]
+        );
+    }
+
+    useEffect(()=>{
+        updateCurrUser();
+    },[]);
+    return (<SafeAreaView style={{...styles.container, ...styles.root}}>
+        <LogoutButton
+            navigation={navigation}
+            user={curr}/>
+
+        <View style={{...styles.container, ...styles.center,
+            paddingVertical: 20,
+        }}>
+
+            {curr && curr.roles.indexOf('root')>-1?(<><View style={{...styles.line,
+                marginTop: 15,
+                marginBottom: 5,
+            }}></View>
+                {active == 'user'?(
+                    <UserList
+                        users={users}
+                        curr={curr}
+                        onRefresh={() => {
+                            updateUsers(curr).then(r => {
+                                console.log('UPDATING USERS ', r);
+                                setUsers(r)
+                            });
+                        }}
+                        onCreate={() => {
+                            navigation.navigate('User', {back:'List'});
+                        }}
+                        onEdit={(user) => {
+                            navigation.navigate('User', {user,
+                                back:'List'});
+                        }}
+                        onRemove={(user) => onRemove(user, 'user')}
+                        onDetail={(user) => {
+                            var items = [{title: user.name}]
+                            var subitems = [];
+                            for (var i in user) {
+                                if (['farm',
+                                    'employee',
+                                    'created_at',
+                                    'updated_at',
+                                    'roles',
+                                    'price',
+                                    'person',
+                                    'address',
+                                    'id'].indexOf(i)>=0)continue;
+
+                                if (user[i] && typeof user[i] == 'object') {
+                                    subitems.push({...user[i], type: i})
+                                } else {
+                                    items.push({
+                                        key: i,
+                                        value: user[i]
+                                    });
+                                }
+
+                            }
+
+                            items.push({
+                                key: 'created_at',
+                                value: user.created_at,
+                            });
+                            items.push({
+                                key: 'updated_at',
+                                value: user.updated_at,
+                            });
+
+                            for (var i in subitems) {
+                                console.log('!', i, subitems[i])
+                                if (subitems[i].length <= 1) continue;
+
+                                items.push({title: trans[subitems[i].type]});
+                                for (var c in subitems[i]) {
+                                    if (['user',
+                                        'created_at',
+                                        'updated_at',
+                                        'type',
+                                        'person',
+                                        'address',
+                                        'id'].indexOf(c)>=0)continue;
+
+                                    items.push({
+                                        parent: i,
+                                        key: c,
+                                        value: subitems[i][c],
+                                    });
+                                }
+                            }
+
+                            navigation.navigate('Detail', {items, back:'List'});
+                        }}
+                    />
+                ):(<Text style={styles.title} onPress={()=>{
+                    updateScreen('user');
+                }}>Usuários</Text>)}</>):null}
+
+            <View style={{...styles.line,
+                marginTop: 15,
+                marginBottom: 5,
+            }}></View>
+            {active == 'farm'?(
+                <FarmList
+                    farms={farms}
+                    onRefresh={() => {
+                        updateFarms(curr).then(r => {
+                            console.log('UPDATING FARMS ', r);
+                            setFarms(r)
+                        });
+                    }}
+                    onCreate={() => {
+                        navigation.navigate('SelUser', {
+                            title: 'dono da fazenda',
+                            back:'List', dest:'Farm'});
+                    }}
+                    onEdit={(farm) => {
+                        navigation.navigate('Farm', {farm,
+                            back:'List'});
+                    }}
+                    onRemove={(farm) => onRemove(farm, 'farm')}
+                    onDetail={(farm) => {
+                        var items = [{title: farm.name}]
+                        var subitems = [];
+                        for (var i in farm) {
+                            if (['farm', 'created_at', 'type', 'updated_at', 'person', 'address', 'id'].indexOf(i)>=0)continue;
+
+                            if (farm[i] && typeof farm[i] == 'object') {
+                                subitems.push({...farm[i], type: i})
+                            } else {
+                                items.push({
+                                    key: i,
+                                    value: farm[i]
+                                });
+                            }
+                        }
+
+                        items.push({
+                            key: 'created_at',
+                            value: farm.created_at,
+                        });
+                        items.push({
+                            key: 'updated_at',
+                            value: farm.updated_at,
+                        });
+
+
+                        for (var i in subitems) {
+                            items.push({title: trans[subitems[i].type]});
+                            for (var c in subitems[i]) {
+                                if (['farm', 'created_at', 'type', 'updated_at', 'person', 'address', 'id'].indexOf(c)>=0)continue;
+
+                                items.push({
+                                    parent: i,
+                                    key: c,
+                                    value: subitems[i][c],
+                                });
+                            }
+                        }
+                        navigation.navigate('Detail', {items, back:'List'});
+                    }}
+                />
+            ):(<Text style={styles.title} onPress={()=>{
+                updateScreen('farm');
+            }}>Fazendas</Text>)}
+
+            <View style={{...styles.line,
+                marginTop: 15,
+                marginBottom: 5,
+            }}></View>
+            {active == 'serv'?(
+                <ServList
+                    servs={servs}
+                    onRefresh={() => {
+                        updateServs(curr).then(r => {
+                            console.log('UPDATING SERVICES ', r);
+                            setServs(r)
+                        });
+                    }}
+                    onCreate={() => {
+                        navigation.navigate('SelUser',
+                            {
+                                title: 'funcionário',
+                                back: 'List',
+                                dest: 'SelFarm',
+                                next: 'Serv'});
+                    }}
+                    onEdit={(serv) => {
+                        navigation.navigate('Serv', {serv,
+                            back:'List'});
+                    }}
+                    onRemove={(serv) => onRemove(serv, 'serv')}
+
+                    onDetail={(serv) => {
+                        function toItems(serv, token) {
+                            var items = [{title: serv.description}];
+                            var subitems = [];
+                            for (var i in serv) {
+                                if ([
+                                    'person',
+                                    'started_at',
+                                    'finished_at',
+                                    'stoped',
+                                    'price',
+                                    'address',
+                                    'id'].indexOf(i)>=0)continue;
+
+                                if (serv[i] && typeof serv[i] == 'object') {
+                                    subitems.push({...serv[i], type: i})
+                                } else {
+                                    items.push({
+                                        key: i,
+                                        value: serv[i]
+                                    });
+                                }
+
+                            }
+
+                            Moment.locale('pt-BR');
+                            var begin = Moment(serv.started_at);
+                            var end = Moment(serv.finished_at);
+                            var diff = 0
+                            if (serv.stoped) {
+                                diff = Math.abs(
+                                    end - begin
+                                );
+                            } else {
+                                diff = Math.abs(
+                                    (new Date()) - begin
+                                );
+
+                            }
+
+                            var hours = diff/1000/60/60; // converting milisec to hours
+
+                            if (hours>0) {
+                                var h = Math.trunc(hours)>0? `${Math.trunc(hours)} hora`+(
+                                    Math.trunc(hours)>1?'s':''
+                                ): ''
+                                var m = hours%1>0?((Math.trunc(hours)>0?'e':''
+                                )+ ` ${Math.trunc((hours%1*100))} minuto`+(
+                                    Math.trunc(hours%1*100)>1?'s':'') ):''
+
+                                items.push({
+                                    key: "Carga horária",
+                                    value: `${h} ${m}`,
+                                });
+                            }
+
+                            if (serv.price) {
+                                items.push({
+                                    key: 'price',
+                                    value: `${(Number(serv.price)*hours).toFixed(2).replace('.',',')} (${serv.price.toFixed(2).replace('.',',')+'/hora'})`,
+                                });
+                            }
+
+                            if (diff > 0) {
+                                items.push({
+                                    key: 'started_at',
+                                    value: serv.started_at,
+                                });
+                                items.push({
+                                    key: 'finished_at',
+                                    value: serv.finished_at,
+                                });
+                            }
+
+                            for (var i in subitems) {
+                                items.push({title: trans[subitems[i].type]});
+                                for (var c in subitems[i]) {
+                                    if (['serv',
+                                        'person',
+                                        'created_at',
+                                        'updated_at',
+                                        'address',
+                                        'stoped',
+                                        'type',
+                                        'id'].indexOf(c)>=0)continue;
+
+                                    items.push({
+                                        parent: i,
+                                        key: c,
+                                        value: subitems[i][c],
+                                    });
+                                }
+                            }
+
+                            items.push({
+                                element: (!serv.stoped?<TouchableOpacity onPress={() => {
+                                    api.post(`/serv/${serv.id}/mark`, {token,data:{
+                                        type: diff?'end':'begin',
+                                    }}).then((r) => {
+                                        api.get(`/serv/${serv.id}`).then((r) => {
+                                            var items = toItems(r.data.data, token)
+                                            navigation.navigate('Detail', {items, back:'List'});
+                                        });
+                                    });
+                                }} style={styles.button}>
+                                    <Text style={styles.buttonText}>{diff?'Parar':'Iniciar'}</Text>
+                                </TouchableOpacity>:null),
+                            });
+                            return items;
+                        }
+                        var items = toItems(serv, curr.token);
+                        console.log('NÃO É AQUI!!')
+                        navigation.navigate('Detail', {
+                            items,
+                            title: `Serviço de ${serv.employee.name}`,
+                            back: 'List',
+                            onRefresh: () => {
+                                api.get(`/serv/${serv.id}`).then((r) => {
+                                    var items = toItems(r.data.data, curr.token)
+                                    navigation.navigate('Detail', {items, back:'List'});
+                                });
+                            }});
+                    }}
+                />
+            ):(<Text style={styles.title} onPress={()=>{
+                updateScreen('serv');
+            }}>Serviços</Text>)}
+
+        </View>
+        <Footer/>
+    </SafeAreaView>)
 }
-const styles = StyleSheet.create({
-   container: {
-       flex: 1
-   },
-   logo: {
-       height: 40,
-       resizeMode: 'contain',
-       alignSelf:'center',
-       marginTop: 20
-   },
-   center: {
-       alignItems:'center',
-       justifyContent:'center',
-   },
-});

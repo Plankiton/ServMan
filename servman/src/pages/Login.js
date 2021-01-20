@@ -1,45 +1,68 @@
 import React, { useState, useEffect } from 'react';
-import { View, AsyncStorage, KeyboardAvoidingView ,Image, Text, TextInput, TouchableOpacity, StyleSheet} from 'react-native';
+import { View,
+         AsyncStorage,
+         KeyboardAvoidingView,
+         Alert,
+         Image,
+         Text,
+         TextInput,
+         TouchableOpacity,
+         StyleSheet } from 'react-native';
 import logo from '../assets/logo.png';
 import { Platform } from '@unimodules/core';
 
+import axios from "axios";
 import api from '../services/api'
+
+import styles from '../Styles';
+
 export default function Login({navigation}) {
     const [doc, setDoc] = useState('');
     const [pass, setPass] = useState('');
 
     useEffect(()=>{
-        AsyncStorage.getItem('user').then(user=>{
-            if(user) {
-                AsyncStorage.getItem('token').then(token=>{
-                    if(token) {
-                        navigation.navigate('List')
-                    }
-                })
+        AsyncStorage.getItem('curr_user').then(user=>{
+            if (user) {
+                navigation.navigate('List');
             }
-        })
+        });
     },[]);
 
     async function handleSubmit() {
-        navigation.navigate('List');
-        const response = await api.post('/auth/login', {
-            data: {
-                document: doc,
-                password: pass,
-            }
-        })
-        const {person_id, token} = response.data;
-        await AsyncStorage.setItem('user', id);
-        await AsyncStorage.setItem('token', token);
+        try {
+            const response = await api.post('/auth/login', {
+                data: {
+                    document: doc,
+                    password: pass,
+                }
+            })
 
-        navigation.navigate('List');
+            const {person_id, token} = response.data.data;
+
+            if (person_id && token) {
+                const r = await api.post(`/user/${person_id}`)
+                await AsyncStorage.setItem('curr_user', JSON.stringify({
+                    ...r.data.data,
+                    token: token,
+                }));
+                AsyncStorage.getItem('curr_user').then(user=> {
+                    navigation.navigate('List');
+                });
+            } else {
+                Alert.alert(`CPF ou Senha estão errados!!`);
+            }
+        } catch (e){
+            Alert.alert(`CPF ou Senha estão errados!!`);
+        }
+
+        // setPass('');
     }
 
     return (
         <KeyboardAvoidingView
-         enabled={Platform.OS== 'ios'} 
+         enabled={Platform.OS=='ios'}
          behavior="padding" style={styles.container}>
-            <View style={styles.box}>
+            <View style={styles.login}>
                 <Image source={logo}/>
 
                 <View style={styles.form}>
@@ -56,7 +79,7 @@ export default function Login({navigation}) {
                     >
                     </TextInput>
                     <Text style={styles.label}>SENHA</Text>
-                    <TextInput 
+                    <TextInput
                         style={styles.input}
                         placeholder="Digite sua senha"
                         placeholderTextColor="#999"
@@ -73,55 +96,3 @@ export default function Login({navigation}) {
         </KeyboardAvoidingView>
     )
 }
-const styles = StyleSheet.create({
-   container: {
-       flex:1,
-       justifyContent:'center',
-       alignItems:'center'
-   }, 
-   box:{
-        alignSelf: 'stretch',
-        paddingHorizontal: 30,
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginTop: 30,
-   },
-   form:{
-        alignSelf: 'stretch',
-        paddingHorizontal: 30,
-        marginTop: 30,
-        marginBottom: 30,
-   },
-   label: {
-       fontWeight: 'bold',
-       color:'#444',
-       marginBottom:8
-   },
-   input: {
-       borderWidth:1,
-       borderColor: '#ddd',
-       paddingHorizontal:20,
-       fontSize: 16,
-       color:'#444',
-       height: 44,
-       marginBottom: 20,
-       borderRadius: 2
-   },
-   button: {
-       height: 42,
-       backgroundColor: '#23B185',
-       justifyContent: 'center',
-       alignItems:'center',
-       borderRadius:2,
-   },
-   buttonText:{
-       color: '#FFF',
-       fontWeight:'bold',
-       fontSize:16,
-   },
-   linkText: {
-       color: '#23B185',
-       fontWeight:'bold',
-       fontSize:16,
-   },
-});
