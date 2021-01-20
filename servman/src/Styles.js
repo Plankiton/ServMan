@@ -85,7 +85,21 @@ const styles = StyleSheet.create({
        color:'#444',
        marginBottom:8
    },
-   input: {
+    input_inside: {
+        flex:1,
+        width:'100%',
+        height:'100%',
+        color:'#444',
+        fontSize: 16,
+        marginHorizontal: 5,
+    },
+    tag: {
+        flex: 1,
+        alignSelf: 'center',
+        padding: 10,
+        backgroundColor: 'rgba(33,100,22,0.3)',
+    },
+    input: {
        borderWidth:1,
        borderColor: '#ddd',
        paddingHorizontal:20,
