@@ -5,7 +5,8 @@ import {Text,
     StyleSheet,
     Image} from 'react-native';
 import {Button} from 'react-native-paper';
-import styles from '../Styles'
+import styles from '../Styles';
+import trans from '../Translate';
 
 function UserList(props) {
     return (<ScrollView>
@@ -134,7 +135,7 @@ function UserList(props) {
                                         color: '#F55',
                                         fontSize: 16,
                                     }}>
-                                        {' '+role+' '}
+                                        {' '+(trans[role]?trans[role]:role)+' '}
                                     </Text>
                                 )
                             )):null}
