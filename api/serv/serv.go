@@ -37,20 +37,20 @@ func PopulateDB(db *gorm.DB) {
 }
 
 // GetPeople mostra todos os contatos da variável serv
-func GetAllServs(w http.ResponseWriter, r *http.Request) {
+func GetAllServs(r *http.Request) util.Response {
     serv := []Serv{}
     database.Find(&serv)
 
     // TODO: sentence for validate logged user
 
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "GetServices",
         Type: "sucess",
         Data: serv,
     })
 }
 
-func GetServs(w http.ResponseWriter, r *http.Request) {
+func GetServs(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     serv := []Serv{}
@@ -58,22 +58,21 @@ func GetServs(w http.ResponseWriter, r *http.Request) {
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
         res = database.Where("farm_id = ? ", params["id"]).Find(&serv)
         if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            w.WriteHeader(404)
 
-            json.NewEncoder(w).Encode(util.Response{
+            return (util.Response{
                 Message: "The person not found!",
                 Code: "NotFound",
+                Status: 404,
                 Type: "error",
                 Data: nil,
             })
 
-            return
         }
     }
 
     // TODO: sentence for validate logged user
 
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "GetServices",
         Type: "sucess",
         Data: serv,
@@ -82,27 +81,26 @@ func GetServs(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetServ mostra apenas um contato
-func GetServ(w http.ResponseWriter, r *http.Request) {
+func GetServ(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     serv := Serv{}
     res := database.Where("id = ?", params["id"]).First(&serv, params["id"])
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 404,
             Message: "The person not found!",
             Code: "NotFound",
             Type: "error",
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
 
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "GetService",
         Type: "sucess",
         Data: serv,
@@ -110,16 +108,16 @@ func GetServ(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreateServ cria um novo contato
-func CreateServ(w http.ResponseWriter, r *http.Request) {
+func CreateServ(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
     if len(body.Data) == 0 {
-        w.WriteHeader(400)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 400,
             Message: "The data sent is invalid!"+
                      `(must be {"data": "..."})`,
             Code: "BadRequest",
@@ -127,7 +125,6 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
             Data: nil,
         })
 
-        return
     }
 
 
@@ -137,15 +134,14 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
         farm := farm.Farm{}
         res := database.Where("id = ?", params["id"]).First(&farm)
         if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            w.WriteHeader(404)
 
-            json.NewEncoder(w).Encode(util.Response{
+            return (util.Response{
+                Status: 404,
                 Message: "The farm not found!",
                 Code: "NotFound",
                 Type: "error",
             })
 
-            return
         }
 
         serv.FarmId = farm.ID
@@ -157,16 +153,15 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
         res := database.Where("doc_value = ? OR id = ?",
         params["id"], params["id"]).First(&person)
         if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            w.WriteHeader(404)
 
-            json.NewEncoder(w).Encode(util.Response{
+            return (util.Response{
+                Status: 404,
                 Message: "The person not found!",
                 Code: "NotFound",
                 Type: "error",
                 Data: nil,
             })
 
-            return
         }
 
         serv.EmployeeId = person.ID
@@ -183,9 +178,9 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
     serv.Description = body.Data["description"]
     serv.ID = util.ToHash(serv.Description+serv.EmployeeId+serv.FarmId)
     if serv.ID == "" {
-        w.WriteHeader(400)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 400,
             Message: "The data sent is invalid!"+
                      `(must be {"data": "..."})`,
             Code: "BadRequest",
@@ -193,7 +188,6 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
             Data: nil,
         })
 
-        return
     }
 
     serv.BeginTime = time.Now()
@@ -203,14 +197,14 @@ func CreateServ(w http.ResponseWriter, r *http.Request) {
 
     database.Create(serv)
     database.Commit()
-    json.NewEncoder(w).Encode(util.Response {
+    return (util.Response {
         Type:    "sucess",
         Code:    "CreatedServ",
         Data:    serv,
     })
 }
 
-func MarkServTime(w http.ResponseWriter, r *http.Request) {
+func MarkServTime(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     var body util.Request
@@ -219,16 +213,15 @@ func MarkServTime(w http.ResponseWriter, r *http.Request) {
     serv := Serv{}
     res := database.Where("id = ?", params["id"]).First(&serv)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 404,
             Message: "The service not found!",
             Code: "NotFound",
             Type: "error",
             Data: nil,
         })
 
-        return
     }
 
     set := false
@@ -259,14 +252,14 @@ func MarkServTime(w http.ResponseWriter, r *http.Request) {
     database.Save(&serv)
     database.Commit()
 
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "UpdatedServ",
         Type: "sucess",
         Data: serv,
     })
 }
 
-func UpdateServ(w http.ResponseWriter, r *http.Request) {
+func UpdateServ(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     var body util.Request
@@ -275,16 +268,15 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
     serv := Serv{}
     res := database.Where("id = ?", params["id"]).First(&serv)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 404,
             Message: "The service not found!",
             Code: "NotFound",
             Type: "error",
             Data: nil,
         })
 
-        return
     }
 
     for i, prop := range(body.Data) {
@@ -305,7 +297,7 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
 
     database.Save(&serv)
     database.Commit()
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "UpdatedServ",
         Type: "sucess",
         Data: serv,
@@ -313,29 +305,28 @@ func UpdateServ(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteServ deleta um contato
-func DeleteServ(w http.ResponseWriter, r *http.Request) {
+func DeleteServ(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     serv := Serv{}
     res := database.Where("id = ?", params["id"]).First(&serv)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 404,
             Message: "The person not found!",
             Code: "NotFound",
             Type: "error",
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
 
     database.Delete(&serv)
     database.Commit()
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "DeleteService",
         Type: "sucess",
         Data: serv,

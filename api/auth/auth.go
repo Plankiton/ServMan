@@ -41,33 +41,32 @@ func PopulateDB(db *gorm.DB) {
     database.AutoMigrate(&Token{})
 }
 
-func CreateToken(w http.ResponseWriter, r *http.Request) {
+func CreateToken(r *http.Request) util.Response {
+
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
     if CheckToken(body.Token, &user.Person{}) == nil {
-        w.WriteHeader(401)
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "You already logged!",
             Code: "PermissionDenied",
             Type: "error",
+            Status: 401,
             Data: nil,
         })
-        return
     }
 
     person := user.Person{}
     res := database.Where("doc_value = ?", body.Data["document"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The person not found!",
             Code: "NotFound",
             Type: "error",
+            Status: 404,
             Data: nil,
         })
 
-        return
     }
 
     if person.CheckPass(body.Data["password"]) {
@@ -78,39 +77,38 @@ func CreateToken(w http.ResponseWriter, r *http.Request) {
         database.Create(token)
         database.Commit()
 
-        json.NewEncoder(w).Encode(util.Response {
+        return (util.Response {
             Code: "Login",
             Type: "sucess",
             Data: token,
         })
-        return
     }
 
-    w.WriteHeader(401)
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Message: "You can't get the token!",
         Code: "PermissionDenied",
         Type: "error",
+        Status: 401,
         Data: nil,
     })
 }
 
-func TestToken(w http.ResponseWriter, r *http.Request) {
+func TestToken(r *http.Request) util.Response {
+
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
     person := user.Person{}
     if CheckToken(body.Token, &person) == nil {
-        json.NewEncoder(w).Encode(util.Response {
+        return (util.Response {
             Code: "Login",
             Type: "sucess",
             Data: person,
         })
-        return
     }
 
-    w.WriteHeader(401)
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
+        Status: 401,
         Message: "Invalid token!",
         Code: "PermissionDenied",
         Type: "error",
@@ -118,7 +116,8 @@ func TestToken(w http.ResponseWriter, r *http.Request) {
     })
 }
 
-func DeleteToken(w http.ResponseWriter, r *http.Request) {
+func DeleteToken(r *http.Request) util.Response {
+
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
@@ -126,23 +125,22 @@ func DeleteToken(w http.ResponseWriter, r *http.Request) {
     if CheckToken(body.Token, &person) == nil {
         token := Token{}
         database.Where("id = ?", body.Token).First(&token)
-        print(token.ID, " - ", person.Name, "\n")
         database.Delete(token)
         database.Commit()
-        json.NewEncoder(w).Encode(util.Response {
+
+        return util.Response {
             Code: "Logout",
             Type: "sucess",
-        })
-        return
+        }
     }
 
-    w.WriteHeader(401)
-    json.NewEncoder(w).Encode(util.Response{
+    return util.Response{
         Message: "Invalid token!",
         Code: "PermissionDenied",
         Type: "error",
+        Status: 401,
         Data: nil,
-    })
+    }
 }
 
 func CheckToken(token_id string, p *user.Person) error {

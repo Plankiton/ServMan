@@ -82,21 +82,20 @@ func PopulateDB(db *gorm.DB) {
 
 
 // GetPeople mostra todos os contatos da variável person
-func GetPeople(w http.ResponseWriter, r *http.Request) {
+func GetPeople(r *http.Request) util.Response {
 
     person := []Person{}
     res := database.Find(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 404,
             Message: "The person not found!",
             Code: "NotFound",
             Type: "error",
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
@@ -123,7 +122,7 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
         })
     }
 
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "GetPeople",
         Type: "sucess",
         Data: people,
@@ -132,23 +131,22 @@ func GetPeople(w http.ResponseWriter, r *http.Request) {
 }
 
 // GetPerson mostra apenas um contato
-func GetPerson(w http.ResponseWriter, r *http.Request) {
+func GetPerson(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     person := Person{}
     res := database.Where("doc_value = ? OR id = ?",
     params["id"], params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 404,
             Message: "The person not found!",
             Code: "NotFound",
             Type: "error",
             Data: nil,
         })
 
-        return
     }
 
     roleships, types := []RoleShip{}, []string{}
@@ -164,7 +162,7 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
 
 
     // TODO: sentence for validate logged user
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Code: "GetPerson",
         Type: "sucess",
         Data: map[string]interface{} {
@@ -180,14 +178,14 @@ func GetPerson(w http.ResponseWriter, r *http.Request) {
 }
 
 // CreatePerson cria um novo contato
-func CreatePerson(w http.ResponseWriter, r *http.Request) {
+func CreatePerson(r *http.Request) util.Response {
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
     if len(body.Data) == 0 {
-        w.WriteHeader(400)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 400,
             Message: "The data sent is invalid!"+
             `(must be {"data": "..."})`,
             Code: "BadRequest",
@@ -195,21 +193,19 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
             Data: nil,
         })
 
-        return
     } else {
         needed := []string{"password", "name", "document", "phone"}
         for _, prop := range(needed) {
             if body.Data[prop] == "" {
-                w.WriteHeader(400)
 
-                json.NewEncoder(w).Encode(util.Response{
+                return (util.Response{
+                    Status: 400,
                     Message: fmt.Sprintf(`"%s" is required!`, prop),
                     Code: "BadRequest",
                     Type: "error",
                     Data: nil,
                 })
 
-                return
             }
         }
     }
@@ -232,41 +228,38 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     _, err := person.SetPass(body.Data["password"])
 
     if err != nil {
-        w.WriteHeader(500)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 500,
             Message: "Error on creation of password hash on database!",
             Code: "DbError",
             Type: "error",
         })
 
-        return
     }
 
     res := database.Where("doc_value = ?", person.DocValue).First(&Person{})
     if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
         if res.Error != nil {
-            w.WriteHeader(400)
 
-            json.NewEncoder(w).Encode(util.Response{
+            return (util.Response{
+                Status: 400,
                 Message: fmt.Sprintf("Database error: %s", res.Error),
                 Code: "BadRequest",
                 Type: "error",
                 Data: nil,
             })
 
-            return
         }
 
-        w.WriteHeader(403)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
+            Status: 403,
             Message: "The user already exist!",
             Code: "AlreadyExist",
             Type: "error",
         })
 
-        return
     }
 
 
@@ -337,7 +330,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     database.Create(person)
     database.Commit()
 
-    json.NewEncoder(w).Encode(util.Response {
+    return (util.Response {
         Type: "sucess",
         Code: "CreatedPerson",
         Data: map[string]interface{} {
@@ -352,7 +345,7 @@ func CreatePerson(w http.ResponseWriter, r *http.Request) {
     })
 }
 
-func UpdatePerson(w http.ResponseWriter, r *http.Request) {
+func UpdatePerson(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     var body util.Request
@@ -361,16 +354,15 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
     person := Person{}
     res := database.Where("id = ? OR doc_value = ?", params["id"], params["id"]).First(&person)
         if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            w.WriteHeader(404)
 
-            json.NewEncoder(w).Encode(util.Response{
+            return (util.Response{
+                Status: 404,
                 Message: "The user not found!",
                 Code: "NotFound",
                 Type: "error",
                 Data: nil,
             })
 
-            return
         }
 
         for i, prop := range(body.Data) {
@@ -448,15 +440,14 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
             case "password":
                 _, err := person.SetPass(prop)
                 if err != nil {
-                    w.WriteHeader(500)
 
-                    json.NewEncoder(w).Encode(util.Response{
+                    return (util.Response{
+                        Status: 500,
                         Message: "Error on creation of password hash on database!",
                         Code: "DbError",
                         Type: "error",
                     })
 
-                    return
                 }
 
             }
@@ -479,7 +470,7 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
             types = append(types, role.Name)
         }
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Code: "UpdatedUser",
             Type: "sucess",
             Data: map[string]interface{} {
@@ -495,21 +486,20 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
     }
 
     // DeletePerson deleta um contato
-    func DeletePerson(w http.ResponseWriter, r *http.Request) {
+    func DeletePerson(r *http.Request) util.Response {
         params := mux.Vars(r)
         person := Person{}
         res := database.Where("id = ? OR doc_value = ?", params["id"], params["id"]).First(&person)
         if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-            w.WriteHeader(404)
 
-            json.NewEncoder(w).Encode(util.Response{
+            return (util.Response{
+                Status: 404,
                 Message: "The person not found!",
                 Code: "NotFound",
                 Type: "error",
                 Data: nil,
             })
 
-            return
         }
 
         // TODO: sentence for validate logged user
@@ -526,7 +516,7 @@ func UpdatePerson(w http.ResponseWriter, r *http.Request) {
             types = append(types, role.Name)
         }
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Code: "DeleteUser",
             Type: "sucess",
             Data: map[string]interface{} {

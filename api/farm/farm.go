@@ -41,174 +41,165 @@ func PopulateDB(db *gorm.DB) {
     database.AutoMigrate(&Addr{})
 }
 
-func GetAddr(w http.ResponseWriter, r *http.Request) {
+func GetAddr(r *http.Request) util.Response {
     params := mux.Vars(r)
     addr := Addr{}
 
     farm := Farm{}
     res := database.Where("id = ?", params["id"]).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
-
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The farm not found!",
             Code: "NotFound",
             Type: "error",
+            Status: 404,
             Data: nil,
         })
-
-        return
     }
 
     res = database.Where("id = ?", farm.AddressId).First(&addr)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The farm dont have address!",
             Code: "NotFound",
             Type: "error",
+            Status: 404,
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
-    json.NewEncoder(w).Encode(util.Response{
-            Code: "GetAddr",
-            Type: "sucess",
-            Data: addr,
-        })
+    return (util.Response{
+        Code: "GetAddr",
+        Type: "sucess",
+        Data: addr,
+    })
 }
 
 // GetPeople mostra todos os contatos da variável farm
-func GetAllFarms(w http.ResponseWriter, r *http.Request) {
+func GetAllFarms(r *http.Request) util.Response {
     farm := []Farm{}
     database.Find(&farm)
 
     // TODO: sentence for validate logged user
 
-    json.NewEncoder(w).Encode(util.Response{
-            Code: "GetFarms",
-            Type: "sucess",
-            Data: farm,
-        })
+    return (util.Response{
+        Code: "GetFarms",
+        Type: "sucess",
+        Data: farm,
+    })
 }
-func GetFarms(w http.ResponseWriter, r *http.Request) {
+func GetFarms(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     farm := []Farm{}
     res := database.Where("person_id = ?", params["id"]).Find(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The farm not found!",
             Code: "NotFound",
             Type: "error",
+            Status: 404,
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
-    json.NewEncoder(w).Encode(util.Response{
-            Code: "GetFarms",
-            Type: "sucess",
-            Data: farm,
-        })
+    return (util.Response{
+        Code: "GetFarms",
+        Type: "sucess",
+        Data: farm,
+    })
 }
 
 // GetFarm mostra apenas um contato
-func GetFarm(w http.ResponseWriter, r *http.Request) {
+func GetFarm(r *http.Request) util.Response {
     params := mux.Vars(r)
     farm := Farm{}
 
     res := database.Where("id = ?", params["id"]).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The farm not found!",
             Code: "NotFound",
             Type: "error",
+            Status: 404,
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
-    json.NewEncoder(w).Encode(util.Response{
-            Code: "GetFarm",
-            Type: "sucess",
-            Data: farm,
-        })
+    return (util.Response{
+        Code: "GetFarm",
+        Type: "sucess",
+        Data: farm,
+    })
 }
 
 // CreateFarm cria um novo contato
-func GetAddrFromCep(w http.ResponseWriter, r *http.Request) {
+func GetAddrFromCep(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     address := Addr{}
     r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", params["cep"]))
 
     if err != nil || r_addr.StatusCode != 200 {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The address not found!",
             Code: "NotFound",
+            Status: 404,
             Type: "error",
         })
 
-        return
     }
 
     json.NewDecoder(r_addr.Body).Decode(&address)
-    json.NewEncoder(w).Encode(util.Response {
+    return (util.Response {
         Type:    "sucess",
         Code:    "GetAddressFromCep",
         Data:    address,
     })
 }
 
-func CreateFarm(w http.ResponseWriter, r *http.Request) {
+func CreateFarm(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     var body util.Request
     json.NewDecoder(r.Body).Decode(&body)
 
     if len(body.Data) == 0 {
-        w.WriteHeader(400)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The data sent is invalid!"+
-                     `(must be {"data": "..."})`,
+            `(must be {"data": "..."})`,
             Code: "BadRequest",
             Type: "error",
+            Status: 400,
             Data: nil,
         })
 
-        return
     }
 
     person := user.Person{}
     res := database.Where("doc_value = ? OR id = ?",
-        params["id"], params["id"]).First(&person)
+    params["id"], params["id"]).First(&person)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The person not found!",
             Code: "NotFound",
             Type: "error",
+            Status: 404,
             Data: nil,
         })
 
-        return
     }
 
 
@@ -269,36 +260,35 @@ func CreateFarm(w http.ResponseWriter, r *http.Request) {
     }
     farm.AddressId = address.ID
     farm.ID = util.ToHash(farm.Name+
-        farm.PersonId+
-        farm.AddressId+
-        farm.CreateTime.Format("%Y%m%d%H%M%S"))
+    farm.PersonId+
+    farm.AddressId+
+    farm.CreateTime.Format("%Y%m%d%H%M%S"))
 
     res = database.Where("address_id = ?", farm.AddressId).First(&farm)
     if !errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(403)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The farm already exists!",
             Code: "AlreadyExists",
             Type: "error",
+            Status: 403,
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
     // Sending all to database
     database.Create(&farm)
     database.Commit()
-    json.NewEncoder(w).Encode(util.Response {
+    return (util.Response {
         Type:    "sucess",
         Code:    "CreatedFarm",
         Data:    farm,
     })
 }
 
-func UpdateFarm(w http.ResponseWriter, r *http.Request) {
+func UpdateFarm(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     var body util.Request
@@ -308,15 +298,14 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
 
     res := database.Where("id = ?", params["id"]).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The farm not found!",
             Code: "NotFound",
+            Status: 404,
             Type: "error",
         })
 
-        return
     }
     res = database.Where("id = ?", farm.AddressId).First(&address)
 
@@ -353,10 +342,10 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
             address.Neightbourn+
             address.Number)
 
-        fmt.Printf("%v\n", address);
-        database.Delete(&address)
-        database.Create(&address)
-        database.Commit()
+            fmt.Printf("%v\n", address);
+            database.Delete(&address)
+            database.Create(&address)
+            database.Commit()
     }
 
     farm.UpdateTime = time.Now()
@@ -367,7 +356,7 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
 
     database.Save(&farm)
     database.Commit()
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Message: fmt.Sprintf("Farm %s did updated!", farm.Name),
         Code: "UpdatedFarm",
         Type: "sucess",
@@ -378,29 +367,28 @@ func UpdateFarm(w http.ResponseWriter, r *http.Request) {
 }
 
 // DeleteFarm deleta um contato
-func DeleteFarm(w http.ResponseWriter, r *http.Request) {
+func DeleteFarm(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     farm := Farm{}
     res := database.Where("id = ?", params["id"]).First(&farm)
     if errors.Is(res.Error, gorm.ErrRecordNotFound) {
-        w.WriteHeader(404)
 
-        json.NewEncoder(w).Encode(util.Response{
+        return (util.Response{
             Message: "The farm not found!",
             Code: "NotFound",
+            Status: 404,
             Type: "error",
             Data: nil,
         })
 
-        return
     }
 
     // TODO: sentence for validate logged user
 
     database.Delete(&farm)
     database.Commit()
-    json.NewEncoder(w).Encode(util.Response{
+    return (util.Response{
         Type: "sucess",
         Code: "DeleteFarm",
         Data: farm,
