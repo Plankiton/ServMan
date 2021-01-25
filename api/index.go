@@ -1,15 +1,22 @@
-package handler
+package api
 
 import (
     "os"
-    "log"
     "net/http"
-
     "strings"
+    "encoding/json"
+
     re "regexp"
+
     "github.com/gorilla/mux"
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
+
+    "github.com/plankiton/ServMan/api/user"
+    "github.com/plankiton/ServMan/api/serv"
+    "github.com/plankiton/ServMan/api/util"
+    "github.com/plankiton/ServMan/api/farm"
+    "github.com/plankiton/ServMan/api/auth"
 )
 
 func getEnv(key string, def string) string {
@@ -20,10 +27,15 @@ func getEnv(key string, def string) string {
     return val
 }
 
-// função principal para executar a api
+func GetRouter() *mux.Router {
+    r := mux.NewRouter()
+    r.HandleFunc("/", Handler).Methods(http.MethodGet)
+    return r
+}
+
 func Handler(w http.ResponseWriter, r *http.Request) {
     dsn := getEnv("DB_URI",
-        "host=localhost "+
+    "host=localhost "+
         "user=plankiton "+
         "password=joaojoao "+
         "dbname=servman "+
@@ -36,50 +48,87 @@ func Handler(w http.ResponseWriter, r *http.Request) {
     }
     db.Migrator().CurrentDatabase()
 
-    routes := map[string] func(*http.Request)util.Response {
-        "/auth/login": auth.CreateToken,
-        "/auth/logout": auth.DeleteToken,
-        "/auth/check": auth.TestToken,
-        "/user": user.GetPeople,
-        "/user": user.CreatePerson,
-        "/user/{id}": user.GetPerson,
-        "/user/{id}": user.DeletePerson,
-        "/user/{id}": user.UpdatePerson,
-        "/farm": farm.GetAllFarms,
-        "/user/{id}/farm": farm.GetFarms,
-        "/user/{id}/farm": farm.CreateFarm,
-        "/farm/{id}": farm.GetFarm,
-        "/farm/{id}": farm.DeleteFarm,
-        "/farm/{id}": farm.UpdateFarm,
-        "/farm/{id}/addr": farm.GetAddr,
-        "/addr/{cep}": farm.GetAddrFromCep,
-        "/serv": serv.GetAllServs,
-        "/user/{id}/serv": serv.GetServs,
-        "/farm/{id}/serv": serv.GetServs,
-        "/user/{id}/serv": serv.CreateServ,
-        "/user/farm/{id}/serv": serv.CreateServ,
-        "/serv/{id}/mark": serv.MarkServTime,
-        "/serv/{id}": serv.GetServ,
-        "/serv/{id}": serv.DeleteServ,
-        "/serv/{id}": serv.UpdateServ,
+    routes := map[string] (map[string]func(*http.Request)util.Response) {
+        "/auth/login": {"POST": auth.CreateToken},
+        "/auth/logout": {"POST": auth.DeleteToken},
+        "/auth/check": {"POST": auth.TestToken},
+        "/user": {
+            "GET": user.GetPeople,
+            "POST": user.CreatePerson,
+        },
+        "/user/{id}": {
+            "GET": user.GetPerson,
+            "DELETE": user.DeletePerson,
+            "POST": user.UpdatePerson,
+        },
+        "/farm": {"GET": farm.GetAllFarms},
+        "/user/{id}/farm": {
+            "GET": farm.GetFarms,
+            "POST": farm.CreateFarm,
+        },
+        "/farm/{id}": {
+            "GET": farm.GetFarm,
+            "DELETE": farm.DeleteFarm,
+            "POST": farm.UpdateFarm,
+        },
+        "/farm/{id}/addr": {"GET": farm.GetAddr},
+        "/addr/{cep}": {"GET": farm.GetAddrFromCep},
+        "/serv": {"GET": serv.GetAllServs},
+        "/user/{id}/serv": {
+            "GET": serv.GetServs,
+            "POST": serv.CreateServ,
+        },
+        "/farm/{id}/serv": {
+            "GET": serv.GetServs, 
+            "POST": serv.CreateServ,
+        },
+        "/serv/{id}/mark": {"POST": serv.MarkServTime},
+        "/serv/{id}": {
+            "GET": serv.GetServ,
+            "DELETE": serv.DeleteServ,
+            "POST": serv.UpdateServ,
+        },
     };
 
+    returned := false
     for i, route := range(routes) {
-        if r.path == i {
-            res := route(r)
+        action := route[r.Method];
+        if action == nil {
+            continue
+        }
+
+        get_res := func () {
+            returned = true
+            res := action(r)
             if res.Status != 0 {
                 w.WriteHeader(res.Status)
             }
 
-            json.NewEncoder(w).Write(res)
-            return
+            json.NewEncoder(w).Encode(res)
+        }
+
+        if r.URL.Path == i {
+            get_res()
+            break
         }
 
         novars := re.MustCompile("\\{*\\}").Split(i, -1)
-        values := []string{};
 
-        for i :=0 ; i < len(novars) ; i += len(match) {
+        pattern := strings.Join(novars, "*")
+        match, _ := re.MatchString(pattern, r.URL.Path)
+        if match {
+            get_res()
+            break
         }
+    }
 
+    if !returned {
+        w.WriteHeader(404)
+        json.NewEncoder(w).Encode(util.Response {
+            Code: "NotFound",
+            Status: 404,
+            Message: "Route not found",
+            Type: "Error",
+        })
     }
 }
