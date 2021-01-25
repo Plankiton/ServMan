@@ -1,4 +1,4 @@
-module github.com/plankiton/ServMan/api
+module github.com/plankiton/ServMan
 
 go 1.15
 
