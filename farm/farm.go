@@ -9,8 +9,8 @@ import (
     "errors"
 
     "gorm.io/gorm"
-    "github.com/plankiton/ServMan/api/util"
-    "github.com/plankiton/ServMan/api/user"
+    "github.com/plankiton/ServMan/util"
+    "github.com/plankiton/ServMan/user"
 )
 
 type Addr struct {
@@ -147,7 +147,7 @@ func GetAddrFromCep(r *http.Request) util.Response {
     params := mux.Vars(r)
 
     address := Addr{}
-    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", params["cep"]))
+    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/cep/v1/%s", params["cep"]))
 
     if err != nil || r_addr.StatusCode != 200 {
 
@@ -208,7 +208,7 @@ func CreateFarm(r *http.Request) util.Response {
     }
 
     address := Addr{}
-    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", body.Data["cep"]))
+    r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/cep/v1/%s", body.Data["cep"]))
     if err == nil {
         json.NewDecoder(r_addr.Body).Decode(&address)
     }
@@ -316,7 +316,7 @@ func UpdateFarm(r *http.Request) util.Response {
         case "cep":
             address.Code = prop
 
-            r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/api/cep/v1/%s", body.Data["cep"]))
+            r_addr, err := http.Get(fmt.Sprintf("https://brasilapi.com.br/cep/v1/%s", body.Data["cep"]))
             if err == nil {
                 json.NewDecoder(r_addr.Body).Decode(&address)
             }

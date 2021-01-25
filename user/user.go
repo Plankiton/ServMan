@@ -10,7 +10,7 @@ import (
     "strings"
 
     "gorm.io/gorm"
-    "github.com/plankiton/ServMan/api/util"
+    "github.com/plankiton/ServMan/util"
 )
 
 type Role struct {

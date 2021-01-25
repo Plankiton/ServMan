@@ -12,11 +12,11 @@ import (
     "gorm.io/driver/postgres"
     "gorm.io/gorm"
 
-    "github.com/plankiton/ServMan/api/user"
-    "github.com/plankiton/ServMan/api/serv"
-    "github.com/plankiton/ServMan/api/util"
-    "github.com/plankiton/ServMan/api/farm"
-    "github.com/plankiton/ServMan/api/auth"
+    "github.com/plankiton/ServMan/user"
+    "github.com/plankiton/ServMan/serv"
+    "github.com/plankiton/ServMan/util"
+    "github.com/plankiton/ServMan/farm"
+    "github.com/plankiton/ServMan/auth"
 )
 
 func getEnv(key string, def string) string {
